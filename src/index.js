@@ -13,6 +13,7 @@ app.use(session({
   resave: false,
   saveUninitialized: false
 }));
+app.use(express.static('public'));
 
 // ---- FR-04: URL生成機能(既存) ----
 function generateAuctionUrls(keyword) {
@@ -98,6 +99,22 @@ app.get('/api/favorites', (req, res) => {
   res.json(favorites);
 });
 
+// ---- ログイン状態の確認 ----
+app.get('/api/me', (req, res) => {
+  if (!req.session.userId) {
+    return res.status(401).json({ error: '未ログインです' });
+  }
+  res.json({ userId: req.session.userId });
+});
+
 app.listen(PORT, () => {
   console.log(`サーバー起動: http://localhost:${PORT}`);
+});
+
+// ---- ログイン状態の確認 ----
+app.get('/api/me', (req, res) => {
+  if (!req.session.userId) {
+    return res.status(401).json({ error: '未ログインです' });
+  }
+  res.json({ userId: req.session.userId });
 });

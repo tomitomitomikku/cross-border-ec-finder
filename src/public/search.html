@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>越境EC商品発見支援サービス - 検索</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      max-width: 600px;
+      margin: 40px auto;
+      padding: 20px;
+    }
+    #searchBox {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+    #keyword {
+      flex: 1;
+      padding: 10px;
+    }
+    button {
+      padding: 10px 16px;
+      cursor: pointer;
+    }
+    .card {
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .card a {
+      text-decoration: none;
+      color: #0066cc;
+    }
+    #logoutBtn {
+      float: right;
+    }
+  </style>
+</head>
+<body>
+  <button id="logoutBtn">ログアウト</button>
+  <h2>商品を探す</h2>
+
+  <div id="searchBox">
+    <input type="text" id="keyword" placeholder="例: ナイキ スニーカー 限定">
+    <button id="searchBtn">検索</button>
+  </div>
+
+  <div id="results"></div>
+
+  <script>
+    const siteNames = {
+      yahooAuction: "ヤフオク!",
+      ebaySold: "eBay(過去の落札)",
+      mercari: "メルカリ",
+      amazon: "Amazon",
+      rakuten: "楽天市場"
+    };
+
+    document.getElementById('searchBtn').addEventListener('click', async () => {
+      const keyword = document.getElementById('keyword').value;
+      if (!keyword) return;
+
+      const res = await fetch(`/api/search?keyword=${encodeURIComponent(keyword)}`);
+      const urls = await res.json();
+
+      const resultsDiv = document.getElementById('results');
+      resultsDiv.innerHTML = '';
+
+      for (const key in urls) {
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.innerHTML = `
+          <a href="${urls[key]}" target="_blank">${siteNames[key] || key} で見る</a>
+          <button data-url="${urls[key]}" data-site="${siteNames[key] || key}">お気に入り</button>
+        `;
+        resultsDiv.appendChild(card);
+      }
+
+      // お気に入りボタンのイベント設定
+      document.querySelectorAll('.card button').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const res = await fetch('/api/favorites', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              keyword,
+              url: btn.dataset.url,
+              siteName: btn.dataset.site
+            })
+          });
+          if (res.ok) {
+            btn.textContent = '追加済み';
+            btn.disabled = true;
+          } else {
+            alert('ログインが必要です');
+          }
+        });
+      });
+    });
+
+    document.getElementById('logoutBtn').addEventListener('click', async () => {
+      await fetch('/api/logout', { method: 'POST' });
+      window.location.href = '/login.html';
+    });
+  </script>
+</body>
+</html>

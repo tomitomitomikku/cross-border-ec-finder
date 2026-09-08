@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>越境EC商品発見支援サービス - ログイン</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      max-width: 400px;
+      margin: 80px auto;
+      padding: 20px;
+    }
+    input {
+      display: block;
+      width: 100%;
+      padding: 8px;
+      margin-bottom: 12px;
+      box-sizing: border-box;
+    }
+    button {
+      width: 100%;
+      padding: 10px;
+      cursor: pointer;
+    }
+    #message {
+      margin-top: 12px;
+      color: red;
+    }
+    #toggle {
+      margin-top: 16px;
+      text-align: center;
+    }
+    #toggle a {
+      cursor: pointer;
+      color: blue;
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <h2 id="formTitle">ログイン</h2>
+
+  <input type="email" id="email" placeholder="メールアドレス">
+  <input type="password" id="password" placeholder="パスワード">
+  <button id="submitBtn">ログイン</button>
+
+  <div id="message"></div>
+
+  <div id="toggle">
+    アカウントをお持ちでない方は <a id="toggleLink">新規登録</a>
+  </div>
+
+  <script>
+    let isLoginMode = true;
+
+    const formTitle = document.getElementById('formTitle');
+    const submitBtn = document.getElementById('submitBtn');
+    const toggleText = document.getElementById('toggle');
+    const messageDiv = document.getElementById('message');
+
+    function attachToggleHandler() {
+      const link = document.getElementById('toggleLink');
+      link.addEventListener('click', () => {
+        isLoginMode = !isLoginMode;
+        if (isLoginMode) {
+          formTitle.textContent = 'ログイン';
+          submitBtn.textContent = 'ログイン';
+          toggleText.innerHTML = 'アカウントをお持ちでない方は <a id="toggleLink">新規登録</a>';
+        } else {
+          formTitle.textContent = '新規登録';
+          submitBtn.textContent = '登録する';
+          toggleText.innerHTML = 'すでにアカウントをお持ちの方は <a id="toggleLink">ログイン</a>';
+        }
+        attachToggleHandler();
+      });
+    }
+    attachToggleHandler();
+
+    submitBtn.addEventListener('click', async () => {
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+      const endpoint = isLoginMode ? '/api/login' : '/api/signup';
+
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
+      const data = await res.json();
+
+      if (res.ok) {
+        if (isLoginMode) {
+          window.location.href = '/search.html';
+        } else {
+          messageDiv.style.color = 'green';
+          messageDiv.textContent = '登録できました。ログインしてください。';
+        }
+      } else {
+        messageDiv.style.color = 'red';
+        messageDiv.textContent = data.error;
+      }
+    });
+  </script>
+</body>
+</html>
