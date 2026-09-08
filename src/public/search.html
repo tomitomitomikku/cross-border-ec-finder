@@ -36,6 +36,13 @@
       text-decoration: none;
       color: #0066cc;
     }
+    .heartBtn {
+      background: none;
+      border: none;
+      font-size: 1.4em;
+      cursor: pointer;
+      color: #cc3366;
+    }
     #logoutBtn {
       float: right;
     }
@@ -43,8 +50,8 @@
 </head>
 <body>
   <button id="logoutBtn">ログアウト</button>
-  <a href="/help.html" style="float:right;">ヘルプ</a>
   <a href="/mypage.html" style="float:right; margin-right:12px;">マイページ</a>
+  <a href="/help.html" style="float:right; margin-right:12px;">ヘルプ</a>
   <h2>商品を探す</h2>
 
   <div id="searchBox">
@@ -78,13 +85,12 @@
         card.className = 'card';
         card.innerHTML = `
           <a href="${urls[key]}" target="_blank">${siteNames[key] || key} で見る</a>
-          <button data-url="${urls[key]}" data-site="${siteNames[key] || key}">お気に入り</button>
+          <button class="heartBtn" data-url="${urls[key]}" data-site="${siteNames[key] || key}">♡</button>
         `;
         resultsDiv.appendChild(card);
       }
 
-      // お気に入りボタンのイベント設定
-      document.querySelectorAll('.card button').forEach(btn => {
+      document.querySelectorAll('.heartBtn').forEach(btn => {
         btn.addEventListener('click', async () => {
           const res = await fetch('/api/favorites', {
             method: 'POST',
@@ -96,8 +102,9 @@
             })
           });
           if (res.ok) {
-            btn.textContent = '追加済み';
+            btn.textContent = '♥';
             btn.disabled = true;
+            alert('お気に入りに登録されました、マイページからいつでもご確認できます');
           } else {
             alert('ログインが必要です');
           }

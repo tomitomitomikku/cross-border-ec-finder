@@ -36,10 +36,11 @@
       color: #666;
     }
     button.delete {
-      background: #eee;
-      border: 1px solid #ccc;
+      background: none;
+      border: none;
+      font-size: 1.2em;
       cursor: pointer;
-      padding: 6px 10px;
+      color: #666;
     }
     #empty {
       color: #666;
@@ -84,7 +85,7 @@
             <a href="${fav.url}" target="_blank">${fav.site_name}</a>
             <span class="keyword">検索キーワード: ${fav.keyword}</span>
           </div>
-          <button class="delete" data-id="${fav.id}">削除</button>
+          <button class="delete" data-id="${fav.id}">☓</button>
         `;
         resultsDiv.appendChild(card);
       });
@@ -94,6 +95,7 @@
           const id = btn.dataset.id;
           const res = await fetch(`/api/favorites/${id}`, { method: 'DELETE' });
           if (res.ok) {
+            alert('お気に入りから削除しました');
             loadFavorites();
           }
         });
