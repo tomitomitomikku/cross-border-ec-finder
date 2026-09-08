@@ -15,7 +15,7 @@ app.use(session({
 }));
 app.use(express.static('public'));
 
-// ---- FR-04: URL生成機能(既存) ----
+// ---- FR-04: URL生成機能 ----
 function generateAuctionUrls(keyword) {
   const encodedKeyword = encodeURIComponent(keyword);
   return {
@@ -99,6 +99,17 @@ app.get('/api/favorites', (req, res) => {
   res.json(favorites);
 });
 
+// ---- FR-10: お気に入り削除 ----
+app.delete('/api/favorites/:id', (req, res) => {
+  if (!req.session.userId) {
+    return res.status(401).json({ error: 'ログインが必要です' });
+  }
+
+  const stmt = db.prepare('DELETE FROM favorites WHERE id = ? AND user_id = ?');
+  stmt.run(req.params.id, req.session.userId);
+  res.json({ message: '削除しました' });
+});
+
 // ---- ログイン状態の確認 ----
 app.get('/api/me', (req, res) => {
   if (!req.session.userId) {
@@ -109,12 +120,4 @@ app.get('/api/me', (req, res) => {
 
 app.listen(PORT, () => {
   console.log(`サーバー起動: http://localhost:${PORT}`);
-});
-
-// ---- ログイン状態の確認 ----
-app.get('/api/me', (req, res) => {
-  if (!req.session.userId) {
-    return res.status(401).json({ error: '未ログインです' });
-  }
-  res.json({ userId: req.session.userId });
 });

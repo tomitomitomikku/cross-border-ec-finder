@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>越境EC商品発見支援サービス - マイページ</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      max-width: 600px;
+      margin: 40px auto;
+      padding: 20px;
+    }
+    #backLink {
+      display: inline-block;
+      margin-bottom: 20px;
+    }
+    .card {
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .card a {
+      text-decoration: none;
+      color: #0066cc;
+    }
+    .card .info {
+      display: flex;
+      flex-direction: column;
+    }
+    .card .keyword {
+      font-size: 0.85em;
+      color: #666;
+    }
+    button.delete {
+      background: #eee;
+      border: 1px solid #ccc;
+      cursor: pointer;
+      padding: 6px 10px;
+    }
+    #empty {
+      color: #666;
+    }
+  </style>
+</head>
+<body>
+
+  <a id="backLink" href="/search.html">← 検索画面に戻る</a>
+
+  <h2>マイページ(お気に入り一覧)</h2>
+
+  <div id="results"></div>
+  <p id="empty" style="display:none;">まだお気に入りがありません。</p>
+
+  <script>
+    async function loadFavorites() {
+      const res = await fetch('/api/favorites');
+
+      if (!res.ok) {
+        alert('ログインが必要です');
+        window.location.href = '/login.html';
+        return;
+      }
+
+      const favorites = await res.json();
+      const resultsDiv = document.getElementById('results');
+      const emptyMsg = document.getElementById('empty');
+      resultsDiv.innerHTML = '';
+
+      if (favorites.length === 0) {
+        emptyMsg.style.display = 'block';
+        return;
+      }
+      emptyMsg.style.display = 'none';
+
+      favorites.forEach(fav => {
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.innerHTML = `
+          <div class="info">
+            <a href="${fav.url}" target="_blank">${fav.site_name}</a>
+            <span class="keyword">検索キーワード: ${fav.keyword}</span>
+          </div>
+          <button class="delete" data-id="${fav.id}">削除</button>
+        `;
+        resultsDiv.appendChild(card);
+      });
+
+      document.querySelectorAll('.delete').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const id = btn.dataset.id;
+          const res = await fetch(`/api/favorites/${id}`, { method: 'DELETE' });
+          if (res.ok) {
+            loadFavorites();
+          }
+        });
+      });
+    }
+
+    loadFavorites();
+  </script>
+</body>
+</html>
