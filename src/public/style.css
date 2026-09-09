@@ -1,0 +1,259 @@
+/* ==========================================
+   越境EC商品発見支援サービス 共通スタイル
+   コンセプト: 税関申告書・郵便荷物タグ
+========================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Noto+Sans+JP:wght@400;500&display=swap');
+
+:root {
+  --navy: #1B2A4A;
+  --paper: #F7F3E9;
+  --stamp-red: #B23A2E;
+  --ink: #1B1B1B;
+  --line: #C9BFA8;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Noto Sans JP', sans-serif;
+  background-color: var(--paper);
+  color: var(--ink);
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 32px 20px 60px;
+  line-height: 1.7;
+}
+
+h1, h2 {
+  font-family: 'Shippori Mincho', serif;
+  color: var(--navy);
+  letter-spacing: 0.03em;
+}
+
+h1 {
+  font-size: 1.6em;
+  border-bottom: 3px double var(--navy);
+  padding-bottom: 10px;
+  margin-bottom: 20px;
+}
+
+h2 {
+  font-size: 1.2em;
+  margin-top: 36px;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 6px;
+}
+
+/* ---- ナビゲーション ---- */
+nav {
+  display: flex;
+  justify-content: flex-end;
+  gap: 16px;
+  font-size: 0.9em;
+  margin-bottom: 24px;
+}
+
+nav a, nav button {
+  font-family: 'Noto Sans JP', sans-serif;
+  color: var(--navy);
+  background: none;
+  border: none;
+  text-decoration: none;
+  border-bottom: 1px solid var(--navy);
+  cursor: pointer;
+  padding: 0 0 2px;
+  font-size: 1em;
+}
+
+/* ---- 検索ボックス ---- */
+#searchBox {
+  display: flex;
+  gap: 0;
+  margin-bottom: 28px;
+  border: 2px solid var(--navy);
+}
+
+#keyword {
+  flex: 1;
+  padding: 12px;
+  border: none;
+  background: var(--paper);
+  font-family: inherit;
+  font-size: 1em;
+}
+
+#keyword:focus {
+  outline: 2px solid var(--stamp-red);
+  outline-offset: -2px;
+}
+
+#searchBtn {
+  background: var(--navy);
+  color: var(--paper);
+  border: none;
+  padding: 0 20px;
+  font-family: 'Shippori Mincho', serif;
+  font-size: 1em;
+  cursor: pointer;
+}
+
+#searchBtn:hover {
+  background: var(--stamp-red);
+}
+
+/* ---- 検索結果・お気に入りカード(税関タグ風) ---- */
+.card {
+  position: relative;
+  border: 1px dashed var(--navy);
+  background: #fff;
+  padding: 14px 16px;
+  margin-bottom: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.card::before {
+  content: "";
+  position: absolute;
+  left: -6px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--paper);
+  border: 1px solid var(--navy);
+}
+
+.card a {
+  text-decoration: none;
+  color: var(--navy);
+  font-weight: 500;
+}
+
+.card a:hover {
+  color: var(--stamp-red);
+}
+
+.card .info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.card .keyword {
+  font-size: 0.8em;
+  color: #706a5a;
+}
+
+/* ---- ハート(お気に入り)・☓(削除)ボタン ---- */
+.heartBtn, .delete {
+  background: none;
+  border: none;
+  font-size: 1.4em;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.heartBtn {
+  color: var(--stamp-red);
+}
+
+.heartBtn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.delete {
+  color: #8a8478;
+}
+
+.delete:hover {
+  color: var(--stamp-red);
+}
+
+/* ---- テーブル(ヘルプページ) ---- */
+table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 12px 0;
+}
+
+th, td {
+  border: 1px solid var(--line);
+  padding: 8px 10px;
+  text-align: left;
+}
+
+th {
+  background: var(--navy);
+  color: var(--paper);
+  font-weight: 500;
+}
+
+.warning {
+  background: #fbeceA;
+  border-left: 4px solid var(--stamp-red);
+  padding: 12px 16px;
+  margin: 12px 0;
+}
+
+/* ---- 空メッセージ ---- */
+#empty {
+  color: #706a5a;
+  font-style: italic;
+}
+
+/* ---- ログイン/新規登録フォーム ---- */
+.authBox {
+  border: 2px solid var(--navy);
+  padding: 28px;
+  margin-top: 40px;
+  background: #fff;
+}
+
+.authBox input {
+  display: block;
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 14px;
+  border: 1px solid var(--line);
+  font-family: inherit;
+  font-size: 1em;
+}
+
+.authBox button {
+  width: 100%;
+  padding: 12px;
+  background: var(--navy);
+  color: var(--paper);
+  border: none;
+  font-family: 'Shippori Mincho', serif;
+  font-size: 1em;
+  cursor: pointer;
+}
+
+.authBox button:hover {
+  background: var(--stamp-red);
+}
+
+#message {
+  margin-top: 12px;
+  font-size: 0.9em;
+}
+
+#toggle {
+  margin-top: 18px;
+  text-align: center;
+  font-size: 0.9em;
+}
+
+#toggle a {
+  color: var(--navy);
+  cursor: pointer;
+  border-bottom: 1px solid var(--navy);
+}

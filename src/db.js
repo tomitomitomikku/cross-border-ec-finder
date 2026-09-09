@@ -20,7 +20,8 @@ db.exec(`
     url TEXT NOT NULL,
     site_name TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(id)
+    FOREIGN KEY (user_id) REFERENCES users(id),
+    UNIQUE (user_id, url)
   )
 `);
 

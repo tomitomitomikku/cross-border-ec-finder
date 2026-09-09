@@ -3,56 +3,15 @@
 <head>
   <meta charset="UTF-8">
   <title>越境EC商品発見支援サービス - マイページ</title>
-  <style>
-    body {
-      font-family: sans-serif;
-      max-width: 600px;
-      margin: 40px auto;
-      padding: 20px;
-    }
-    #backLink {
-      display: inline-block;
-      margin-bottom: 20px;
-    }
-    .card {
-      border: 1px solid #ccc;
-      border-radius: 8px;
-      padding: 12px;
-      margin-bottom: 10px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    .card a {
-      text-decoration: none;
-      color: #0066cc;
-    }
-    .card .info {
-      display: flex;
-      flex-direction: column;
-    }
-    .card .keyword {
-      font-size: 0.85em;
-      color: #666;
-    }
-    button.delete {
-      background: none;
-      border: none;
-      font-size: 1.2em;
-      cursor: pointer;
-      color: #666;
-    }
-    #empty {
-      color: #666;
-    }
-  </style>
+  <link rel="stylesheet" href="/style.css">
 </head>
 <body>
+<nav>
+  <a id="backLink" href="/search.html">検索画面に戻る</a>
+</nav>
 
-  <a id="backLink" href="/search.html">← 検索画面に戻る</a>
-
-  <h2>マイページ(お気に入り一覧)</h2>
-
+<h1>マイページ</h1>
+  
   <div id="results"></div>
   <p id="empty" style="display:none;">まだお気に入りがありません。</p>
 

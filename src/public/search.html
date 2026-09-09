@@ -3,56 +3,16 @@
 <head>
   <meta charset="UTF-8">
   <title>越境EC商品発見支援サービス - 検索</title>
-  <style>
-    body {
-      font-family: sans-serif;
-      max-width: 600px;
-      margin: 40px auto;
-      padding: 20px;
-    }
-    #searchBox {
-      display: flex;
-      gap: 8px;
-      margin-bottom: 20px;
-    }
-    #keyword {
-      flex: 1;
-      padding: 10px;
-    }
-    button {
-      padding: 10px 16px;
-      cursor: pointer;
-    }
-    .card {
-      border: 1px solid #ccc;
-      border-radius: 8px;
-      padding: 12px;
-      margin-bottom: 10px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    .card a {
-      text-decoration: none;
-      color: #0066cc;
-    }
-    .heartBtn {
-      background: none;
-      border: none;
-      font-size: 1.4em;
-      cursor: pointer;
-      color: #cc3366;
-    }
-    #logoutBtn {
-      float: right;
-    }
-  </style>
+ <link rel="stylesheet" href="/style.css">
 </head>
 <body>
+<nav>
+  <a href="/help.html">ヘルプ</a>
+  <a href="/mypage.html">マイページ</a>
   <button id="logoutBtn">ログアウト</button>
-  <a href="/mypage.html" style="float:right; margin-right:12px;">マイページ</a>
-  <a href="/help.html" style="float:right; margin-right:12px;">ヘルプ</a>
-  <h2>商品を探す</h2>
+</nav>
+
+<h1>商品を探す</h1>
 
   <div id="searchBox">
     <input type="text" id="keyword" placeholder="例: ナイキ スニーカー 限定">

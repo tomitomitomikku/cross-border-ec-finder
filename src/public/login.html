@@ -3,41 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <title>越境EC商品発見支援サービス - ログイン</title>
-  <style>
-    body {
-      font-family: sans-serif;
-      max-width: 400px;
-      margin: 80px auto;
-      padding: 20px;
-    }
-    input {
-      display: block;
-      width: 100%;
-      padding: 8px;
-      margin-bottom: 12px;
-      box-sizing: border-box;
-    }
-    button {
-      width: 100%;
-      padding: 10px;
-      cursor: pointer;
-    }
-    #message {
-      margin-top: 12px;
-      color: red;
-    }
-    #toggle {
-      margin-top: 16px;
-      text-align: center;
-    }
-    #toggle a {
-      cursor: pointer;
-      color: blue;
-      text-decoration: underline;
-    }
-  </style>
+  <link rel="stylesheet" href="/style.css">
 </head>
+
 <body>
+ <h1>越境EC商品発見支援サービス</h1>
+
+<div class="authBox">
   <h2 id="formTitle">ログイン</h2>
 
   <input type="email" id="email" placeholder="メールアドレス">
@@ -49,6 +21,7 @@
   <div id="toggle">
     アカウントをお持ちでない方は <a id="toggleLink">新規登録</a>
   </div>
+</div>
 
   <script>
     let isLoginMode = true;
