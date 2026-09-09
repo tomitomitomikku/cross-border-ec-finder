@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>比較する</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      width: 320px;
+      padding: 16px;
+      background: #F7F3E9;
+      color: #1B1B1B;
+    }
+    h2 {
+      font-size: 1em;
+      margin: 0 0 10px;
+      color: #1B2A4A;
+    }
+    #pageTitle {
+      font-size: 0.8em;
+      color: #706a5a;
+      margin-bottom: 10px;
+      word-break: break-all;
+    }
+    input {
+      width: 100%;
+      padding: 8px;
+      margin-bottom: 8px;
+      box-sizing: border-box;
+    }
+    button {
+      width: 100%;
+      padding: 8px;
+      cursor: pointer;
+      background: #1B2A4A;
+      color: #F7F3E9;
+      border: none;
+      margin-bottom: 10px;
+    }
+    .card {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border: 1px dashed #1B2A4A;
+      background: #fff;
+      padding: 8px 10px;
+      margin-bottom: 6px;
+      font-size: 0.85em;
+    }
+    .card a {
+      color: #1B2A4A;
+      text-decoration: none;
+    }
+    .heartBtn {
+      background: none;
+      border: none;
+      color: #B23A2E;
+      font-size: 1.1em;
+      cursor: pointer;
+    }
+    #loginNotice {
+      font-size: 0.8em;
+      color: #B23A2E;
+    }
+  </style>
+</head>
+<body>
+  <h2>このページの商品を比較</h2>
+  <div id="pageTitle"></div>
+
+  <input type="text" id="keyword" placeholder="キーワードを編集できます">
+  <button id="searchBtn">検索する</button>
+
+  <div id="results"></div>
+  <div id="loginNotice" style="display:none;">
+    ログインしていません。お気に入り登録にはWeb版でログインしてください。
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
