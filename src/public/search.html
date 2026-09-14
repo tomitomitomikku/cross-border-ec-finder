@@ -76,6 +76,20 @@
       await fetch('/api/logout', { method: 'POST' });
       window.location.href = '/login.html';
     });
+        // ---- FR-06: 為替レート表示 ----
+    async function showExchangeRate() {
+      const res = await fetch('/api/exchange-rate');
+      const data = await res.json();
+      const rate = data.usdToJpy.toFixed(2);
+      const rateDiv = document.createElement('div');
+      rateDiv.style.fontSize = '0.85em';
+      rateDiv.style.color = '#706a5a';
+      rateDiv.style.marginBottom = '16px';
+      rateDiv.textContent = `参考為替レート: 1ドル ≒ ${rate}円(送料・関税別)`;
+      document.querySelector('h1').insertAdjacentElement('afterend', rateDiv);
+    }
+
+    showExchangeRate();
   </script>
 </body>
 </html>

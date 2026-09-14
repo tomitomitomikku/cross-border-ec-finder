@@ -1,3 +1,4 @@
+   require('dotenv').config();
 const express = require('express');
 const session = require('express-session');
 const bcrypt = require('bcrypt');
@@ -35,6 +36,49 @@ app.get('/api/search', (req, res) => {
   }
   res.json(generateAuctionUrls(keyword));
 });
+// ---- FR-06: 為替換算の目安表示 ----
+app.get('/api/exchange-rate', async (req, res) => {
+  try {
+    const response = await fetch('https://api.exchangerate-api.com/v4/latest/USD');
+    const data = await response.json();
+    res.json({ usdToJpy: data.rates.JPY });
+  } catch (err) {
+    res.status(500).json({ error: '為替レートの取得に失敗しました' });
+  }
+});
+
+// ---- FR-03: 現行販売サイトへの案内(Web検索API連携) ----
+app.get('/api/search-current', async (req, res) => {
+  const keyword = req.query.keyword;
+  if (!keyword) {
+    return res.status(400).json({ error: 'keywordが必要です' });
+  }
+
+  const apiKey = process.env.GOOGLE_API_KEY;
+  const cx = process.env.GOOGLE_CX;
+
+  try {
+    const url = `https://www.googleapis.com/customsearch/v1?key=${apiKey}&cx=${cx}&q=${encodeURIComponent(keyword)}`;
+    const response = await fetch(url);
+    const data = await response.json();
+
+    if (!data.items) {
+      return res.json([]);
+    }
+
+    // タイトル・URL・簡単な説明だけを取り出して返す
+    const results = data.items.slice(0, 10).map(item => ({
+      title: item.title,
+      url: item.link,
+      snippet: item.snippet
+    }));
+
+    res.json(results);
+  } catch (err) {
+    res.status(500).json({ error: '検索に失敗しました' });
+  }
+});
+
 
 // ---- FR-09: 会員登録 ----
 app.post('/api/signup', async (req, res) => {
