@@ -96,6 +96,61 @@ app.post('/api/smart-search', async (req, res) => {
   }
 });
 
+// ---- 新機能: 相場チェック(正式商品名限定、商品概要付き) ----
+app.post('/api/market-price', async (req, res) => {
+  const { text } = req.body;
+  if (!text) {
+    return res.status(400).json({ error: 'textが必要です' });
+  }
+
+  try {
+    const message = await anthropic.messages.create({
+      model: 'claude-sonnet-4-6',
+      max_tokens: 800,
+      tools: [{ type: 'web_search_20250305', name: 'web_search' }],
+      messages: [{
+        role: 'user',
+        content: `ユーザーが次のように入力しました: 「${text}」
+
+まず、これが特定の商品を指す「正式な商品名」として十分具体的かどうか判定してください。
+- 「クレヨンしんちゃん」のような作品名・カテゴリ名・ブランド名だけの入力は不十分です
+- 「クレヨンしんちゃん フィギュア 2020年 限定版」のように、種類・年代・型番などが分かる具体的な商品名なら十分です
+
+十分具体的な場合は、Web検索で以下を調べてください。
+1. 商品概要:発売時期、発売元・メーカー、簡単な商品説明(自分の言葉で2〜3文程度)
+2. 現在の実際の取引相場:定価・発売時の価格ではなく、フリマ・オークション・中古市場での直近の取引実績や出品価格を優先する。生産終了品・入手困難品・コレクター需要の高い商品はプレミア価格(定価より高騰した価格)がついている場合があるため、そうした実勢価格を反映する。逆に、大量生産品や需要の落ち着いた商品は、定価より安い相場になっている場合もある
+
+重要: 価格帯は「一般的な状態(並品〜美品程度)」での相場に絞ってください。鑑定機関によるトップグレード品(例: PSA10等)や、極端に状態の良い/悪い個体による外れ値は除外し、実用的な範囲(価格帯の上限が下限の10倍を大きく超えないことを目安)に収めてください。もし対象商品に極端な高額取引事例(鑑定品等)が存在する場合は、価格帯には含めず "note" にその旨を補足するだけに留めてください
+
+必ず以下のJSON形式のみで回答してください(他の文章は含めない):
+
+十分具体的な場合:
+{
+  "sufficient": true,
+  "releaseDate": "発売時期(分かる範囲で、例: 2020年3月)",
+  "manufacturer": "発売元・メーカー",
+  "description": "商品概要(2〜3文程度)",
+  "priceRangeLow": 数値,
+  "priceRangeHigh": 数値,
+  "note": "価格帯の根拠を一言(自分の言葉で。プレミア価格や鑑定品の高額事例がある場合はその旨も触れる)"
+}
+
+不十分な場合:
+{"sufficient": false, "message": "キーワード不足、正式な商品名を入力してください"}`
+      }]
+    });
+
+    const textBlock = message.content.find(block => block.type === 'text');
+    const jsonMatch = textBlock.text.match(/\{[\s\S]*\}/);
+    const result = JSON.parse(jsonMatch[0]);
+
+    res.json(result);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: '相場の取得に失敗しました' });
+  }
+});
+
 // ---- FR-09: 会員登録 ----
 app.post('/api/signup', async (req, res) => {
   const { email, password } = req.body;

@@ -11,37 +11,54 @@
       border-radius: 3px;
       margin-left: 8px;
     }
-    .trust-trusted {
-      background: #e3f0e3;
-      color: #2d6a2d;
+    .trust-trusted { background: #e3f0e3; color: #2d6a2d; }
+    .trust-unknown { background: #f0ecdd; color: #8a6d1d; }
+    .trust-risky { background: #fbe4e2; color: #B23A2E; font-weight: bold; }
+    .snippet { font-size: 0.85em; color: #706a5a; margin-top: 4px; }
+    .cardMain { display: flex; flex-direction: column; flex: 1; }
+    .oldResultsTitle { font-size: 1em; margin-top: 32px; }
+    #loading { display: none; color: #706a5a; margin: 12px 0; }
+    #searchBox { flex-wrap: wrap; }
+
+    #marketBtn {
+      background: var(--stamp-red);
+      color: var(--paper);
+      border: none;
+      padding: 0 20px;
+      font-family: 'Shippori Mincho', serif;
+      cursor: pointer;
+      transition: background 0.15s, transform 0.1s;
     }
-    .trust-unknown {
-      background: #f0ecdd;
-      color: #8a6d1d;
+    #marketBtn:hover {
+      background: #8f2e24;
     }
-    .trust-risky {
-      background: #fbe4e2;
-      color: #B23A2E;
-      font-weight: bold;
+    #marketBtn:active {
+      transform: scale(0.96);
     }
-    .snippet {
+    #marketBtn.loading {
+      background: #706a5a;
+      cursor: wait;
+    }
+
+    .priceCard {
+      border: 2px solid var(--navy);
+      background: #fff;
+      padding: 18px;
+      margin-bottom: 20px;
+    }
+    .priceRange {
+      font-family: 'Shippori Mincho', serif;
+      font-size: 1.4em;
+      color: var(--stamp-red);
+      margin: 8px 0;
+    }
+    .priceMeta {
       font-size: 0.85em;
       color: #706a5a;
-      margin-top: 4px;
+      margin-bottom: 4px;
     }
-    .cardMain {
-      display: flex;
-      flex-direction: column;
-      flex: 1;
-    }
-    .oldResultsTitle {
-      font-size: 1em;
-      margin-top: 32px;
-    }
-    #loading {
-      display: none;
-      color: #706a5a;
-      margin: 12px 0;
+    .priceError {
+      color: var(--stamp-red);
     }
   </style>
 </head>
@@ -57,7 +74,10 @@
   <div id="searchBox">
     <input type="text" id="keyword" placeholder="例: ナイキの限定スニーカーが欲しい">
     <button id="searchBtn">検索</button>
+    <button id="marketBtn">相場</button>
   </div>
+
+  <div id="priceResult"></div>
 
   <div id="loading">検索中です、少々お待ちください…</div>
 
@@ -92,7 +112,6 @@
       smartResultsDiv.innerHTML = '';
       auctionResultsDiv.innerHTML = '';
 
-      // ---- FR-02+03+08: AIによる検索・信頼性判定 ----
       try {
         const smartRes = await fetch('/api/smart-search', {
           method: 'POST',
@@ -122,7 +141,6 @@
 
       loading.style.display = 'none';
 
-      // ---- FR-04: 過去の相場(URLテンプレート) ----
       const res = await fetch(`/api/search?keyword=${encodeURIComponent(keyword)}`);
       const urls = await res.json();
 
@@ -136,6 +154,49 @@
         auctionResultsDiv.appendChild(card);
       }
       attachHeartHandlers(keyword);
+    });
+
+    // ---- 新機能: 相場チェック ----
+    document.getElementById('marketBtn').addEventListener('click', async () => {
+      const keyword = document.getElementById('keyword').value;
+      if (!keyword) return;
+
+      const marketBtn = document.getElementById('marketBtn');
+      const priceResultDiv = document.getElementById('priceResult');
+      marketBtn.classList.add('loading');
+      marketBtn.textContent = '調査中…';
+      marketBtn.disabled = true;
+      priceResultDiv.innerHTML = '';
+
+      try {
+        const res = await fetch('/api/market-price', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text: keyword })
+        });
+        const data = await res.json();
+
+        if (!data.sufficient) {
+          priceResultDiv.innerHTML = `<div class="priceCard priceError">${data.message}</div>`;
+        } else {
+          const low = data.priceRangeLow.toLocaleString();
+          const high = data.priceRangeHigh.toLocaleString();
+          priceResultDiv.innerHTML = `
+            <div class="priceCard">
+              <div class="priceMeta">発売時期: ${data.releaseDate || '不明'} / 発売元: ${data.manufacturer || '不明'}</div>
+              <div>${data.description || ''}</div>
+              <div class="priceRange">${low}円 〜 ${high}円</div>
+              <div class="priceMeta">${data.note || ''}</div>
+            </div>
+          `;
+        }
+      } catch (err) {
+        priceResultDiv.innerHTML = '<div class="priceCard priceError">相場の取得に失敗しました。</div>';
+      }
+
+      marketBtn.classList.remove('loading');
+      marketBtn.textContent = '相場';
+      marketBtn.disabled = false;
     });
 
     function attachHeartHandlers(keyword) {
@@ -163,7 +224,6 @@
       });
     }
 
-    // ---- FR-06: 為替レート表示 ----
     async function showExchangeRate() {
       const res = await fetch('/api/exchange-rate');
       const data = await res.json();
