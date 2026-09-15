@@ -1,5 +1,5 @@
 /* ==========================================
-   越境EC商品発見支援サービス 共通スタイル
+   Item Journal 共通スタイル
    コンセプト: 税関申告書・郵便荷物タグ
 ========================================== */
 
@@ -256,4 +256,52 @@ th {
   color: var(--navy);
   cursor: pointer;
   border-bottom: 1px solid var(--navy);
+}
+
+/* ---- 広告枠(ダミー、将来のAdSense等導入を想定) ---- */
+.adSlot {
+  border: 1px dashed var(--line);
+  background: #fdfcf7;
+  color: #a8a08a;
+  font-size: 0.75em;
+  text-align: center;
+  padding: 12px;
+  margin-bottom: 16px;
+}
+
+.adSlot::before {
+  content: "広告";
+  display: block;
+  font-size: 0.9em;
+  margin-bottom: 4px;
+  letter-spacing: 0.1em;
+}
+
+.pageLayout {
+  display: flex;
+  gap: 24px;
+  align-items: flex-start;
+}
+
+.mainColumn {
+  flex: 1;
+  min-width: 0;
+}
+
+.sideColumn {
+  width: 160px;
+  flex-shrink: 0;
+}
+
+.sideColumn .adSlot {
+  height: 300px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+@media (max-width: 700px) {
+  .sideColumn {
+    display: none;
+  }
 }

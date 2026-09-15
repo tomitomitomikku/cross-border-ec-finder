@@ -59,7 +59,7 @@
     .priceError { color: var(--stamp-red); }
   </style>
 </head>
-<body>
+<body style="max-width: 900px;">
   <nav>
     <a href="/help.html">ヘルプ</a>
     <a href="/mypage.html">マイページ</a>
@@ -68,21 +68,29 @@
 
   <h1>商品を探す</h1>
 
-  <div id="searchBox">
-    <input type="text" id="keyword" placeholder="例: ナイキの限定スニーカーが欲しい">
-    <button id="searchBtn">検索</button>
-    <button id="marketBtn">相場</button>
-    <button id="resetBtn">リセット</button>
+  <div class="pageLayout">
+    <div class="mainColumn">
+      <div id="searchBox">
+        <input type="text" id="keyword" placeholder="例: ナイキの限定スニーカーが欲しい">
+        <button id="searchBtn">検索</button>
+        <button id="marketBtn">相場</button>
+        <button id="resetBtn">リセット</button>
+      </div>
+
+      <div id="priceResult"></div>
+
+      <div id="loading">検索中です、少々お待ちください…</div>
+
+      <div id="smartResults"></div>
+
+      <h2 class="oldResultsTitle">過去の相場をチェック</h2>
+      <div id="auctionResults"></div>
+    </div>
+
+    <div class="sideColumn">
+      <div class="adSlot">広告掲載予定枠<br>(将来の収益化施策)</div>
+    </div>
   </div>
-
-  <div id="priceResult"></div>
-
-  <div id="loading">検索中です、少々お待ちください…</div>
-
-  <div id="smartResults"></div>
-
-  <h2 class="oldResultsTitle">過去の相場をチェック</h2>
-  <div id="auctionResults"></div>
 
   <script>
     const siteNames = {
@@ -154,7 +162,7 @@
       attachHeartHandlers(keyword);
     });
 
-    // ---- 新機能: 相場チェック ----
+    // ---- 相場チェック ----
     document.getElementById('marketBtn').addEventListener('click', async () => {
       const keyword = document.getElementById('keyword').value;
       if (!keyword) return;
