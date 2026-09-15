@@ -29,16 +29,19 @@
       cursor: pointer;
       transition: background 0.15s, transform 0.1s;
     }
-    #marketBtn:hover {
-      background: #8f2e24;
+    #marketBtn:hover { background: #8f2e24; }
+    #marketBtn:active { transform: scale(0.96); }
+    #marketBtn.loading { background: #706a5a; cursor: wait; }
+
+    #resetBtn {
+      background: none;
+      color: var(--navy);
+      border: 1px solid var(--navy);
+      padding: 0 16px;
+      font-family: 'Noto Sans JP', sans-serif;
+      cursor: pointer;
     }
-    #marketBtn:active {
-      transform: scale(0.96);
-    }
-    #marketBtn.loading {
-      background: #706a5a;
-      cursor: wait;
-    }
+    #resetBtn:hover { background: #eee6d6; }
 
     .priceCard {
       border: 2px solid var(--navy);
@@ -52,14 +55,8 @@
       color: var(--stamp-red);
       margin: 8px 0;
     }
-    .priceMeta {
-      font-size: 0.85em;
-      color: #706a5a;
-      margin-bottom: 4px;
-    }
-    .priceError {
-      color: var(--stamp-red);
-    }
+    .priceMeta { font-size: 0.85em; color: #706a5a; margin-bottom: 4px; }
+    .priceError { color: var(--stamp-red); }
   </style>
 </head>
 <body>
@@ -75,6 +72,7 @@
     <input type="text" id="keyword" placeholder="例: ナイキの限定スニーカーが欲しい">
     <button id="searchBtn">検索</button>
     <button id="marketBtn">相場</button>
+    <button id="resetBtn">リセット</button>
   </div>
 
   <div id="priceResult"></div>
@@ -197,6 +195,14 @@
       marketBtn.classList.remove('loading');
       marketBtn.textContent = '相場';
       marketBtn.disabled = false;
+    });
+
+    // ---- リセットボタン ----
+    document.getElementById('resetBtn').addEventListener('click', () => {
+      document.getElementById('keyword').value = '';
+      document.getElementById('smartResults').innerHTML = '';
+      document.getElementById('auctionResults').innerHTML = '';
+      document.getElementById('priceResult').innerHTML = '';
     });
 
     function attachHeartHandlers(keyword) {
