@@ -4,7 +4,10 @@ const session = require('express-session');
 const bcrypt = require('bcrypt');
 const db = require('./db');
 const Anthropic = require('@anthropic-ai/sdk');
-const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+const anthropic = new Anthropic({
+  apiKey: process.env.ANTHROPIC_API_KEY,
+  timeout: 180 * 1000  // 180秒(3分)に延長
+});
 
 const app = express();
 const PORT = 3000;
@@ -61,7 +64,7 @@ app.post('/api/smart-search', async (req, res) => {
     const message = await anthropic.messages.create({
       model: 'claude-sonnet-4-6',
       max_tokens: 1500,
-      tools: [{ type: 'web_search_20250305', name: 'web_search' }],
+      tools: [{ type: 'web_search_20250305', name: 'web_search', max_uses: 3 }],
       messages: [{
         role: 'user',
         content: `ユーザーが次の商品を探しています: 「${text}」
@@ -106,7 +109,7 @@ app.post('/api/market-price', async (req, res) => {
   try {
     const message = await anthropic.messages.create({
       model: 'claude-sonnet-4-6',
-      max_tokens: 800,
+      max_tokens: 2000,
       tools: [{ type: 'web_search_20250305', name: 'web_search' }],
       messages: [{
         role: 'user',
@@ -120,9 +123,11 @@ app.post('/api/market-price', async (req, res) => {
 1. 商品概要:発売時期、発売元・メーカー、簡単な商品説明(自分の言葉で2〜3文程度)
 2. 現在の実際の取引相場:定価・発売時の価格ではなく、フリマ・オークション・中古市場での直近の取引実績や出品価格を優先する。生産終了品・入手困難品・コレクター需要の高い商品はプレミア価格(定価より高騰した価格)がついている場合があるため、そうした実勢価格を反映する。逆に、大量生産品や需要の落ち着いた商品は、定価より安い相場になっている場合もある
 
-重要: 価格帯は「一般的な状態(並品〜美品程度)」での相場に絞ってください。鑑定機関によるトップグレード品(例: PSA10等)や、極端に状態の良い/悪い個体による外れ値は除外し、実用的な範囲(価格帯の上限が下限の10倍を大きく超えないことを目安)に収めてください。もし対象商品に極端な高額取引事例(鑑定品等)が存在する場合は、価格帯には含めず "note" にその旨を補足するだけに留めてください
+重要(価格帯の範囲について): 価格帯は「一般的な状態(並品〜美品程度)」での相場に絞ってください。鑑定機関によるトップグレード品(例: PSA10等)や、極端に状態の良い/悪い個体による外れ値は除外し、実用的な範囲(価格帯の上限が下限の10倍を大きく超えないことを目安)に収めてください。もし対象商品に極端な高額取引事例(鑑定品等)が存在する場合は、価格帯には含めず "note" にその旨を補足するだけに留めてください
 
-必ず以下のJSON形式のみで回答してください(他の文章は含めない):
+重要(通貨について): 海外の商品で現地通貨(ドル、ユーロ等)の相場情報しか見つからない場合は、必ず現在のおおよその為替レートで日本円に換算した金額を priceRangeLow / priceRangeHigh に入れてください。現地通貨の数値をそのまま円の数値として使うことは絶対にしないでください(例: 150ドルは約22,500円であり、150円ではありません)。円換算した場合はその旨を note に明記してください
+
+必ず以下のJSON形式のみで回答してください(他の文章は含めない、説明や前置きも書かない):
 
 十分具体的な場合:
 {
@@ -132,7 +137,7 @@ app.post('/api/market-price', async (req, res) => {
   "description": "商品概要(2〜3文程度)",
   "priceRangeLow": 数値,
   "priceRangeHigh": 数値,
-  "note": "価格帯の根拠を一言(自分の言葉で。プレミア価格や鑑定品の高額事例がある場合はその旨も触れる)"
+  "note": "価格帯の根拠を一言(自分の言葉で。プレミア価格や鑑定品の高額事例、円換算した場合はその旨も触れる)"
 }
 
 不十分な場合:
@@ -141,7 +146,14 @@ app.post('/api/market-price', async (req, res) => {
     });
 
     const textBlock = message.content.find(block => block.type === 'text');
+    if (!textBlock || !textBlock.text) {
+      throw new Error('Claudeからテキスト応答が得られませんでした');
+    }
     const jsonMatch = textBlock.text.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) {
+      console.error('JSON抽出失敗。Claudeの生の返答:', textBlock.text);
+      throw new Error('JSON形式の応答が見つかりませんでした');
+    }
     const result = JSON.parse(jsonMatch[0]);
 
     res.json(result);
