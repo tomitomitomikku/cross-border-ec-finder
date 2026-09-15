@@ -2,24 +2,69 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>越境EC商品発見支援サービス - 検索</title>
- <link rel="stylesheet" href="/style.css">
+  <title>Item Journal - 検索</title>
+  <link rel="stylesheet" href="/style.css">
+  <style>
+    .trustBadge {
+      font-size: 0.75em;
+      padding: 2px 8px;
+      border-radius: 3px;
+      margin-left: 8px;
+    }
+    .trust-trusted {
+      background: #e3f0e3;
+      color: #2d6a2d;
+    }
+    .trust-unknown {
+      background: #f0ecdd;
+      color: #8a6d1d;
+    }
+    .trust-risky {
+      background: #fbe4e2;
+      color: #B23A2E;
+      font-weight: bold;
+    }
+    .snippet {
+      font-size: 0.85em;
+      color: #706a5a;
+      margin-top: 4px;
+    }
+    .cardMain {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+    }
+    .oldResultsTitle {
+      font-size: 1em;
+      margin-top: 32px;
+    }
+    #loading {
+      display: none;
+      color: #706a5a;
+      margin: 12px 0;
+    }
+  </style>
 </head>
 <body>
-<nav>
-  <a href="/help.html">ヘルプ</a>
-  <a href="/mypage.html">マイページ</a>
-  <button id="logoutBtn">ログアウト</button>
-</nav>
+  <nav>
+    <a href="/help.html">ヘルプ</a>
+    <a href="/mypage.html">マイページ</a>
+    <button id="logoutBtn">ログアウト</button>
+  </nav>
 
-<h1>商品を探す</h1>
+  <h1>商品を探す</h1>
 
   <div id="searchBox">
-    <input type="text" id="keyword" placeholder="例: ナイキ スニーカー 限定">
+    <input type="text" id="keyword" placeholder="例: ナイキの限定スニーカーが欲しい">
     <button id="searchBtn">検索</button>
   </div>
 
-  <div id="results"></div>
+  <div id="loading">検索中です、少々お待ちください…</div>
+
+  <div id="smartResults"></div>
+
+  <h2 class="oldResultsTitle">過去の相場をチェック</h2>
+  <div id="auctionResults"></div>
 
   <script>
     const siteNames = {
@@ -30,15 +75,56 @@
       rakuten: "楽天市場"
     };
 
+    const trustLabels = {
+      trusted: "信頼できるサイト",
+      unknown: "情報の少ないサイト",
+      risky: "⚠️信頼性の低いサイトの可能性があります"
+    };
+
     document.getElementById('searchBtn').addEventListener('click', async () => {
       const keyword = document.getElementById('keyword').value;
       if (!keyword) return;
 
+      const loading = document.getElementById('loading');
+      const smartResultsDiv = document.getElementById('smartResults');
+      const auctionResultsDiv = document.getElementById('auctionResults');
+      loading.style.display = 'block';
+      smartResultsDiv.innerHTML = '';
+      auctionResultsDiv.innerHTML = '';
+
+      // ---- FR-02+03+08: AIによる検索・信頼性判定 ----
+      try {
+        const smartRes = await fetch('/api/smart-search', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text: keyword })
+        });
+        const smartData = await smartRes.json();
+
+        smartData.results.forEach(item => {
+          const card = document.createElement('div');
+          card.className = 'card';
+          card.innerHTML = `
+            <div class="cardMain">
+              <a href="${item.url}" target="_blank">${item.title}</a>
+              <span class="trustBadge trust-${item.trust}">${trustLabels[item.trust] || item.trust}</span>
+              <div class="snippet">${item.snippet}</div>
+            </div>
+            <button class="heartBtn" data-url="${item.url}" data-site="${item.title}">♡</button>
+          `;
+          smartResultsDiv.appendChild(card);
+        });
+
+        attachHeartHandlers(keyword);
+      } catch (err) {
+        smartResultsDiv.innerHTML = '<p>検索に失敗しました。</p>';
+      }
+
+      loading.style.display = 'none';
+
+      // ---- FR-04: 過去の相場(URLテンプレート) ----
       const res = await fetch(`/api/search?keyword=${encodeURIComponent(keyword)}`);
       const urls = await res.json();
-
-      const resultsDiv = document.getElementById('results');
-      resultsDiv.innerHTML = '';
 
       for (const key in urls) {
         const card = document.createElement('div');
@@ -47,10 +133,14 @@
           <a href="${urls[key]}" target="_blank">${siteNames[key] || key} で見る</a>
           <button class="heartBtn" data-url="${urls[key]}" data-site="${siteNames[key] || key}">♡</button>
         `;
-        resultsDiv.appendChild(card);
+        auctionResultsDiv.appendChild(card);
       }
+      attachHeartHandlers(keyword);
+    });
 
-      document.querySelectorAll('.heartBtn').forEach(btn => {
+    function attachHeartHandlers(keyword) {
+      document.querySelectorAll('.heartBtn:not([data-bound])').forEach(btn => {
+        btn.setAttribute('data-bound', 'true');
         btn.addEventListener('click', async () => {
           const res = await fetch('/api/favorites', {
             method: 'POST',
@@ -66,17 +156,14 @@
             btn.disabled = true;
             alert('お気に入りに登録されました、マイページからいつでもご確認できます');
           } else {
-            alert('ログインが必要です');
+            const data = await res.json();
+            alert(data.error);
           }
         });
       });
-    });
+    }
 
-    document.getElementById('logoutBtn').addEventListener('click', async () => {
-      await fetch('/api/logout', { method: 'POST' });
-      window.location.href = '/login.html';
-    });
-        // ---- FR-06: 為替レート表示 ----
+    // ---- FR-06: 為替レート表示 ----
     async function showExchangeRate() {
       const res = await fetch('/api/exchange-rate');
       const data = await res.json();
@@ -90,6 +177,11 @@
     }
 
     showExchangeRate();
+
+    document.getElementById('logoutBtn').addEventListener('click', async () => {
+      await fetch('/api/logout', { method: 'POST' });
+      window.location.href = '/login.html';
+    });
   </script>
 </body>
 </html>

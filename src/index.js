@@ -1,8 +1,10 @@
-   require('dotenv').config();
+require('dotenv').config();
 const express = require('express');
 const session = require('express-session');
 const bcrypt = require('bcrypt');
 const db = require('./db');
+const Anthropic = require('@anthropic-ai/sdk');
+const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
 const app = express();
 const PORT = 3000;
@@ -28,7 +30,7 @@ function generateAuctionUrls(keyword) {
   };
 }
 
-// 検索API(URLを返すだけ)
+// ---- FR-04: 検索API(URLを返すだけ) ----
 app.get('/api/search', (req, res) => {
   const keyword = req.query.keyword;
   if (!keyword) {
@@ -36,6 +38,7 @@ app.get('/api/search', (req, res) => {
   }
   res.json(generateAuctionUrls(keyword));
 });
+
 // ---- FR-06: 為替換算の目安表示 ----
 app.get('/api/exchange-rate', async (req, res) => {
   try {
@@ -47,38 +50,51 @@ app.get('/api/exchange-rate', async (req, res) => {
   }
 });
 
-// ---- FR-03: 現行販売サイトへの案内(Web検索API連携) ----
-app.get('/api/search-current', async (req, res) => {
-  const keyword = req.query.keyword;
-  if (!keyword) {
-    return res.status(400).json({ error: 'keywordが必要です' });
+// ---- FR-02 + FR-03 + FR-08: 意図判定・Web検索・信頼性簡易判定を統合 ----
+app.post('/api/smart-search', async (req, res) => {
+  const { text } = req.body;
+  if (!text) {
+    return res.status(400).json({ error: 'textが必要です' });
   }
 
-  const apiKey = process.env.GOOGLE_API_KEY;
-  const cx = process.env.GOOGLE_CX;
-
   try {
-    const url = `https://www.googleapis.com/customsearch/v1?key=${apiKey}&cx=${cx}&q=${encodeURIComponent(keyword)}`;
-    const response = await fetch(url);
-    const data = await response.json();
+    const message = await anthropic.messages.create({
+      model: 'claude-sonnet-4-6',
+      max_tokens: 1500,
+      tools: [{ type: 'web_search_20250305', name: 'web_search' }],
+      messages: [{
+        role: 'user',
+        content: `ユーザーが次の商品を探しています: 「${text}」
 
-    if (!data.items) {
-      return res.json([]);
-    }
+この商品を購入できる、実在するECサイトをWeb検索で調べてください。
+見つかった各サイトについて、以下を判定してください:
+- 商品ブランドの公式サイト・公式オンラインストアは無条件で "trusted"
+- 大手・広く知られたECサイト(Amazon, 楽天, eBay, Etsyなど)も "trusted"
+- 実在するが小規模・聞き馴染みのないサイトなら "unknown"
+- ドメインが不自然、詐欺的な特徴が見られるサイトなら "risky"
 
-    // タイトル・URL・簡単な説明だけを取り出して返す
-    const results = data.items.slice(0, 10).map(item => ({
-      title: item.title,
-      url: item.link,
-      snippet: item.snippet
-    }));
+最後に、必ず以下のJSON形式のみで回答してください(他の文章は含めない):
 
-    res.json(results);
+{
+  "keyword": "検索に使ったキーワード",
+  "intent": "current または auction または unknown",
+  "results": [
+    {"title": "商品名", "url": "URL", "snippet": "簡単な説明(自分の言葉で)", "trust": "trusted または unknown または risky"}
+  ]
+}`
+      }]
+    });
+
+    const textBlock = message.content.find(block => block.type === 'text');
+    const jsonMatch = textBlock.text.match(/\{[\s\S]*\}/);
+    const result = JSON.parse(jsonMatch[0]);
+
+    res.json(result);
   } catch (err) {
+    console.error(err);
     res.status(500).json({ error: '検索に失敗しました' });
   }
 });
-
 
 // ---- FR-09: 会員登録 ----
 app.post('/api/signup', async (req, res) => {
@@ -128,9 +144,17 @@ app.post('/api/favorites', (req, res) => {
   }
 
   const { keyword, url, siteName } = req.body;
-  const stmt = db.prepare('INSERT INTO favorites (user_id, keyword, url, site_name) VALUES (?, ?, ?, ?)');
-  stmt.run(req.session.userId, keyword, url, siteName);
-  res.json({ message: 'お気に入りに追加しました' });
+
+  try {
+    const stmt = db.prepare('INSERT INTO favorites (user_id, keyword, url, site_name) VALUES (?, ?, ?, ?)');
+    stmt.run(req.session.userId, keyword, url, siteName);
+    res.json({ message: 'お気に入りに追加しました' });
+  } catch (err) {
+    if (err.message.includes('UNIQUE')) {
+      return res.status(409).json({ error: 'すでにお気に入り登録済みです' });
+    }
+    res.status(500).json({ error: '登録に失敗しました' });
+  }
 });
 
 // ---- FR-10: お気に入り一覧取得 ----
