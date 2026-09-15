@@ -28,14 +28,28 @@
       margin-bottom: 8px;
       box-sizing: border-box;
     }
+    .btnRow {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 10px;
+    }
     button {
-      width: 100%;
+      flex: 1;
       padding: 8px;
       cursor: pointer;
+      border: none;
+    }
+    #searchBtn {
       background: #1B2A4A;
       color: #F7F3E9;
-      border: none;
-      margin-bottom: 10px;
+    }
+    #marketBtn {
+      background: #B23A2E;
+      color: #F7F3E9;
+    }
+    button.loading {
+      background: #706a5a;
+      cursor: wait;
     }
     .card {
       display: flex;
@@ -57,9 +71,31 @@
       color: #B23A2E;
       font-size: 1.1em;
       cursor: pointer;
+      flex: none;
     }
     #loginNotice {
       font-size: 0.8em;
+      color: #B23A2E;
+    }
+    .priceCard {
+      border: 2px solid #1B2A4A;
+      background: #fff;
+      padding: 12px;
+      margin-bottom: 10px;
+      font-size: 0.85em;
+    }
+    .priceRange {
+      font-weight: bold;
+      color: #B23A2E;
+      font-size: 1.1em;
+      margin: 6px 0;
+    }
+    .priceMeta {
+      font-size: 0.85em;
+      color: #706a5a;
+      margin-bottom: 4px;
+    }
+    .priceError {
       color: #B23A2E;
     }
   </style>
@@ -69,7 +105,12 @@
   <div id="pageTitle"></div>
 
   <input type="text" id="keyword" placeholder="キーワードを編集できます">
-  <button id="searchBtn">検索する</button>
+  <div class="btnRow">
+    <button id="searchBtn">検索する</button>
+    <button id="marketBtn">相場</button>
+  </div>
+
+  <div id="priceResult"></div>
 
   <div id="results"></div>
   <div id="loginNotice" style="display:none;">

@@ -8,7 +8,6 @@ const siteNames = {
   rakuten: "楽天市場"
 };
 
-// ポップアップが開いたら、今見ているタブのタイトルを取得してキーワード欄に自動入力
 chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
   const pageTitle = tabs[0].title || '';
   document.getElementById('pageTitle').textContent = `対象ページ: ${pageTitle}`;
@@ -59,4 +58,47 @@ document.getElementById('searchBtn').addEventListener('click', async () => {
       }
     });
   });
+});
+
+// ---- 相場チェック ----
+document.getElementById('marketBtn').addEventListener('click', async () => {
+  const keyword = document.getElementById('keyword').value;
+  if (!keyword) return;
+
+  const marketBtn = document.getElementById('marketBtn');
+  const priceResultDiv = document.getElementById('priceResult');
+  marketBtn.classList.add('loading');
+  marketBtn.textContent = '調査中…';
+  marketBtn.disabled = true;
+  priceResultDiv.innerHTML = '';
+
+  try {
+    const res = await fetch(`${API_BASE}/api/market-price`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: keyword })
+    });
+    const data = await res.json();
+
+    if (!data.sufficient) {
+      priceResultDiv.innerHTML = `<div class="priceCard priceError">${data.message}</div>`;
+    } else {
+      const low = data.priceRangeLow.toLocaleString();
+      const high = data.priceRangeHigh.toLocaleString();
+      priceResultDiv.innerHTML = `
+        <div class="priceCard">
+          <div class="priceMeta">発売時期: ${data.releaseDate || '不明'} / 発売元: ${data.manufacturer || '不明'}</div>
+          <div>${data.description || ''}</div>
+          <div class="priceRange">${low}円 〜 ${high}円</div>
+          <div class="priceMeta">${data.note || ''}</div>
+        </div>
+      `;
+    }
+  } catch (err) {
+    priceResultDiv.innerHTML = '<div class="priceCard priceError">相場の取得に失敗しました。</div>';
+  }
+
+  marketBtn.classList.remove('loading');
+  marketBtn.textContent = '相場';
+  marketBtn.disabled = false;
 });
