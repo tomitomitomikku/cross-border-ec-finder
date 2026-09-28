@@ -14,11 +14,54 @@
     .trust-trusted { background: #e3f0e3; color: #2d6a2d; }
     .trust-unknown { background: #f0ecdd; color: #8a6d1d; }
     .trust-risky { background: #fbe4e2; color: #B23A2E; font-weight: bold; }
+    .card.riskyCard { border-left: 4px solid var(--stamp-red); }
+    .trustReason { font-size: 0.8em; color: #706a5a; margin-top: 4px; }
+    .regionBadge {
+      font-size: 0.75em;
+      padding: 2px 8px;
+      border-radius: 3px;
+      margin-left: 8px;
+      background: #e6ecf5;
+      color: var(--navy);
+    }
+    .regionNotice {
+      display: none;
+      font-size: 0.8em;
+      color: #8a6d1d;
+      background: #f7f0dc;
+      padding: 8px 12px;
+      margin-bottom: 12px;
+    }
     .snippet { font-size: 0.85em; color: #706a5a; margin-top: 4px; }
     .cardMain { display: flex; flex-direction: column; flex: 1; }
-    .oldResultsTitle { font-size: 1em; margin-top: 32px; }
+    .emptyNote { color: #706a5a; font-size: 0.9em; }
     #loading { display: none; color: #706a5a; margin: 12px 0; }
     #searchBox { flex-wrap: wrap; }
+
+    /* ---- 国内外 / 国内 / 国外 の表示切り替え ---- */
+    .regionFilter {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-top: 16px;
+    }
+    .regionFilterLabel { font-size: 0.85em; color: #706a5a; }
+    .scopeToggle {
+      display: inline-flex;
+      border: 1px solid var(--navy);
+    }
+    .scopeBtn {
+      background: none;
+      border: none;
+      padding: 6px 18px;
+      cursor: pointer;
+      font-family: 'Noto Sans JP', sans-serif;
+      color: var(--navy);
+    }
+    .scopeBtn.active {
+      background: var(--navy);
+      color: var(--paper);
+    }
 
     #marketBtn {
       background: var(--stamp-red);
@@ -57,6 +100,36 @@
     }
     .priceMeta { font-size: 0.85em; color: #706a5a; margin-bottom: 4px; }
     .priceError { color: var(--stamp-red); }
+
+    /* ---- FR-05: 現行販売 / 過去の相場 タブ ---- */
+    .tabBar {
+      display: flex;
+      border-bottom: 2px solid var(--navy);
+      margin-top: 20px;
+    }
+    .tabBtn {
+      background: none;
+      border: none;
+      padding: 10px 20px;
+      font-family: 'Shippori Mincho', serif;
+      font-size: 1em;
+      cursor: pointer;
+      color: #706a5a;
+      border-bottom: 3px solid transparent;
+      margin-bottom: -2px;
+    }
+    .tabBtn.active {
+      color: var(--navy);
+      border-bottom: 3px solid var(--stamp-red);
+      font-weight: bold;
+    }
+    .tabPanel { display: none; padding-top: 16px; }
+    .tabPanel.active { display: block; }
+    .intentNote {
+      font-size: 0.8em;
+      color: #706a5a;
+      margin: 8px 0 0;
+    }
   </style>
 </head>
 <body style="max-width: 900px;">
@@ -81,10 +154,32 @@
 
       <div id="loading">検索中です、少々お待ちください…</div>
 
-      <div id="smartResults"></div>
+      <div id="tabArea" style="display:none;">
+        <p id="intentNote" class="intentNote"></p>
 
-      <h2 class="oldResultsTitle">過去の相場をチェック</h2>
-      <div id="auctionResults"></div>
+        <div class="regionFilter">
+          <span class="regionFilterLabel">表示するサイト:</span>
+          <div class="scopeToggle">
+            <button class="scopeBtn active" id="regionAllBtn" data-region="all">国内外</button>
+            <button class="scopeBtn" id="regionDomesticBtn" data-region="domestic">国内</button>
+            <button class="scopeBtn" id="regionOverseasBtn" data-region="overseas">国外</button>
+          </div>
+        </div>
+
+        <div class="tabBar">
+          <button class="tabBtn" id="tabCurrentBtn" data-target="panelCurrent">現行販売</button>
+          <button class="tabBtn" id="tabAuctionBtn" data-target="panelAuction">過去の相場</button>
+        </div>
+        <div class="tabPanel" id="panelCurrent">
+          <div id="regionNotice" class="regionNotice">
+            海外サイトは、アクセスすると日本版のサイトに自動で転送される場合があります。転送された場合は、ページ内の国・地域の設定から切り替えてください。
+          </div>
+          <div id="smartResults"></div>
+        </div>
+        <div class="tabPanel" id="panelAuction">
+          <div id="auctionResults"></div>
+        </div>
+      </div>
     </div>
 
     <div class="sideColumn">
@@ -101,65 +196,201 @@
       rakuten: "楽天市場"
     };
 
+    // 過去の相場リンクのうち、海外サイトに当たるもの
+    const OVERSEAS_SITE_KEYS = ['ebaySold'];
+
     const trustLabels = {
       trusted: "信頼できるサイト",
       unknown: "情報の少ないサイト",
       risky: "⚠️信頼性の低いサイトの可能性があります"
     };
 
+    const intentLabels = {
+      current: "「今すぐ買いたい」の意図と判定し、現行販売タブを表示しています",
+      auction: "「相場を知りたい」の意図と判定し、過去の相場タブを表示しています",
+      unknown: "意図が明確でないため、現行販売タブを表示しています(過去の相場も確認できます)"
+    };
+
+    // 検索結果の状態(タブで絞り込むたびに、ここから描き直す)
+    let regionFilter = 'all';      // 'all'=国内外 / 'domestic'=国内 / 'overseas'=国外
+    let smartItems = [];
+    let smartError = false;
+    let auctionUrls = {};
+    let lastKeyword = '';
+    const favoritedUrls = new Set();
+
+    // 画面に出す文字を無害化する(検索結果のタイトル等に特殊文字が入っていても壊れないように)
+    function esc(value) {
+      return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function safeUrl(url) {
+      return /^https?:\/\//i.test(url) ? url : '#';
+    }
+
+    function matchesFilter(isOverseas) {
+      if (regionFilter === 'all') return true;
+      return regionFilter === 'overseas' ? isOverseas : !isOverseas;
+    }
+
+    function heartButton(url, site) {
+      const done = favoritedUrls.has(url);
+      return `<button class="heartBtn" data-url="${esc(url)}" data-site="${esc(site)}"${done ? ' disabled' : ''}>${done ? '♥' : '♡'}</button>`;
+    }
+
+    // ---- 国内外 / 国内 / 国外 の絞り込み ----
+    function setRegionFilter(value, rerender = true) {
+      regionFilter = value;
+      document.querySelectorAll('.scopeBtn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.region === value);
+      });
+      if (rerender) renderResults();
+    }
+
+    document.querySelectorAll('.scopeBtn').forEach(btn => {
+      btn.addEventListener('click', () => setRegionFilter(btn.dataset.region));
+    });
+
+    // ---- 信頼性の低いサイトのリンクを開く前に確認する ----
+    document.getElementById('smartResults').addEventListener('click', (e) => {
+      const link = e.target.closest('a[data-risky="true"]');
+      if (link && !confirm('このサイトは信頼性が低い可能性があります。個人情報やカード情報の入力には十分ご注意ください。それでも開きますか？')) {
+        e.preventDefault();
+      }
+    });
+
+    // ---- 結果の描画 ----
+    function renderResults() {
+      const smartDiv = document.getElementById('smartResults');
+      const auctionDiv = document.getElementById('auctionResults');
+      const regionNotice = document.getElementById('regionNotice');
+      smartDiv.innerHTML = '';
+      auctionDiv.innerHTML = '';
+
+      // 現行販売
+      let overseasShown = false;
+      if (smartError) {
+        smartDiv.innerHTML = '<p class="emptyNote">検索に失敗しました。</p>';
+      } else {
+        const visible = smartItems.filter(item => matchesFilter(item.region === 'overseas'));
+        visible.forEach(item => {
+          const isOverseas = item.region === 'overseas';
+          const isRisky = item.trust === 'risky';
+          if (isOverseas) overseasShown = true;
+          const regionBadge = isOverseas ? '<span class="regionBadge">海外サイト</span>' : '';
+          const reason = item.trustReason
+            ? `<div class="trustReason">判定理由: ${esc(item.trustReason)}</div>`
+            : '';
+          const evidence = (item.trustEvidence && item.trustEvidence.length)
+            ? `<div class="trustReason">客観指標: ${item.trustEvidence.map(esc).join(' / ')}${item.trustAdjusted ? '(この指標をもとに「信頼性が低い」に引き上げました)' : ''}</div>`
+            : '';
+
+          const card = document.createElement('div');
+          card.className = 'card' + (isRisky ? ' riskyCard' : '');
+          card.innerHTML = `
+            <div class="cardMain">
+              <a href="${esc(safeUrl(item.url))}" target="_blank"${isRisky ? ' data-risky="true"' : ''}>${esc(item.title)}</a>
+              <div>
+                <span class="trustBadge trust-${esc(item.trust)}">${esc(trustLabels[item.trust] || item.trust)}</span>${regionBadge}
+              </div>
+              ${reason}
+              ${evidence}
+              <div class="snippet">${esc(item.snippet)}</div>
+            </div>
+            ${heartButton(item.url, item.title)}
+          `;
+          smartDiv.appendChild(card);
+        });
+        if (visible.length === 0) {
+          smartDiv.innerHTML = '<p class="emptyNote">該当するサイトはありません。</p>';
+        }
+      }
+      regionNotice.style.display = overseasShown ? 'block' : 'none';
+
+      // 過去の相場
+      const keys = Object.keys(auctionUrls).filter(key => matchesFilter(OVERSEAS_SITE_KEYS.includes(key)));
+      keys.forEach(key => {
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.innerHTML = `
+          <a href="${esc(safeUrl(auctionUrls[key]))}" target="_blank">${esc(siteNames[key] || key)} で見る</a>
+          ${heartButton(auctionUrls[key], siteNames[key] || key)}
+        `;
+        auctionDiv.appendChild(card);
+      });
+      if (keys.length === 0) {
+        auctionDiv.innerHTML = '<p class="emptyNote">該当するサイトはありません。</p>';
+      }
+
+      attachHeartHandlers();
+    }
+
+    // ---- FR-05: 現行販売 / 過去の相場 タブ切り替え ----
+    function switchTab(targetId) {
+      document.querySelectorAll('.tabBtn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.target === targetId);
+      });
+      document.querySelectorAll('.tabPanel').forEach(panel => {
+        panel.classList.toggle('active', panel.id === targetId);
+      });
+    }
+
+    document.getElementById('tabCurrentBtn').addEventListener('click', () => switchTab('panelCurrent'));
+    document.getElementById('tabAuctionBtn').addEventListener('click', () => switchTab('panelAuction'));
+
+    // ---- 検索 ----
     document.getElementById('searchBtn').addEventListener('click', async () => {
       const keyword = document.getElementById('keyword').value;
       if (!keyword) return;
 
       const loading = document.getElementById('loading');
-      const smartResultsDiv = document.getElementById('smartResults');
-      const auctionResultsDiv = document.getElementById('auctionResults');
+      const tabArea = document.getElementById('tabArea');
+      const intentNote = document.getElementById('intentNote');
       loading.style.display = 'block';
-      smartResultsDiv.innerHTML = '';
-      auctionResultsDiv.innerHTML = '';
+      tabArea.style.display = 'none';
+
+      lastKeyword = keyword;
+      smartItems = [];
+      smartError = false;
+      auctionUrls = {};
+      let intent = 'unknown';
 
       try {
         const smartRes = await fetch('/api/smart-search', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ text: keyword })
+          body: JSON.stringify({ text: keyword, scope: 'global' })
         });
         const smartData = await smartRes.json();
-
-        smartData.results.forEach(item => {
-          const card = document.createElement('div');
-          card.className = 'card';
-          card.innerHTML = `
-            <div class="cardMain">
-              <a href="${item.url}" target="_blank">${item.title}</a>
-              <span class="trustBadge trust-${item.trust}">${trustLabels[item.trust] || item.trust}</span>
-              <div class="snippet">${item.snippet}</div>
-            </div>
-            <button class="heartBtn" data-url="${item.url}" data-site="${item.title}">♡</button>
-          `;
-          smartResultsDiv.appendChild(card);
-        });
-
-        attachHeartHandlers(keyword);
+        if (!smartRes.ok || !Array.isArray(smartData.results)) {
+          throw new Error('検索結果の形式が不正です');
+        }
+        intent = smartData.intent || 'unknown';
+        smartItems = smartData.results;
       } catch (err) {
-        smartResultsDiv.innerHTML = '<p>検索に失敗しました。</p>';
+        smartError = true;
       }
 
+      try {
+        const res = await fetch(`/api/search?keyword=${encodeURIComponent(keyword)}&scope=global`);
+        auctionUrls = await res.json();
+      } catch (err) {
+        auctionUrls = {};
+      }
+
+      setRegionFilter('all', false);
+      renderResults();
       loading.style.display = 'none';
+      tabArea.style.display = 'block';
+      intentNote.textContent = intentLabels[intent] || intentLabels.unknown;
 
-      const res = await fetch(`/api/search?keyword=${encodeURIComponent(keyword)}`);
-      const urls = await res.json();
-
-      for (const key in urls) {
-        const card = document.createElement('div');
-        card.className = 'card';
-        card.innerHTML = `
-          <a href="${urls[key]}" target="_blank">${siteNames[key] || key} で見る</a>
-          <button class="heartBtn" data-url="${urls[key]}" data-site="${siteNames[key] || key}">♡</button>
-        `;
-        auctionResultsDiv.appendChild(card);
-      }
-      attachHeartHandlers(keyword);
+      // 意図判定の結果に応じて初期表示タブを自動選択(FR-05)
+      switchTab(intent === 'auction' ? 'panelAuction' : 'panelCurrent');
     });
 
     // ---- 相場チェック ----
@@ -183,16 +414,16 @@
         const data = await res.json();
 
         if (!data.sufficient) {
-          priceResultDiv.innerHTML = `<div class="priceCard priceError">${data.message}</div>`;
+          priceResultDiv.innerHTML = `<div class="priceCard priceError">${esc(data.message || data.error)}</div>`;
         } else {
-          const low = data.priceRangeLow.toLocaleString();
-          const high = data.priceRangeHigh.toLocaleString();
+          const low = Number(data.priceRangeLow).toLocaleString();
+          const high = Number(data.priceRangeHigh).toLocaleString();
           priceResultDiv.innerHTML = `
             <div class="priceCard">
-              <div class="priceMeta">発売時期: ${data.releaseDate || '不明'} / 発売元: ${data.manufacturer || '不明'}</div>
-              <div>${data.description || ''}</div>
+              <div class="priceMeta">発売時期: ${esc(data.releaseDate || '不明')} / 発売元: ${esc(data.manufacturer || '不明')}</div>
+              <div>${esc(data.description || '')}</div>
               <div class="priceRange">${low}円 〜 ${high}円</div>
-              <div class="priceMeta">${data.note || ''}</div>
+              <div class="priceMeta">${esc(data.note || '')}</div>
             </div>
           `;
         }
@@ -208,12 +439,19 @@
     // ---- リセットボタン ----
     document.getElementById('resetBtn').addEventListener('click', () => {
       document.getElementById('keyword').value = '';
+      document.getElementById('priceResult').innerHTML = '';
       document.getElementById('smartResults').innerHTML = '';
       document.getElementById('auctionResults').innerHTML = '';
-      document.getElementById('priceResult').innerHTML = '';
+      document.getElementById('tabArea').style.display = 'none';
+      smartItems = [];
+      smartError = false;
+      auctionUrls = {};
+      lastKeyword = '';
+      setRegionFilter('all', false);
     });
 
-    function attachHeartHandlers(keyword) {
+    // ---- お気に入り(ハート) ----
+    function attachHeartHandlers() {
       document.querySelectorAll('.heartBtn:not([data-bound])').forEach(btn => {
         btn.setAttribute('data-bound', 'true');
         btn.addEventListener('click', async () => {
@@ -221,17 +459,23 @@
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              keyword,
+              keyword: lastKeyword,
               url: btn.dataset.url,
               siteName: btn.dataset.site
             })
           });
           if (res.ok) {
+            favoritedUrls.add(btn.dataset.url);
             btn.textContent = '♥';
             btn.disabled = true;
             alert('お気に入りに登録されました、マイページからいつでもご確認できます');
           } else {
             const data = await res.json();
+            if (res.status === 409) {
+              favoritedUrls.add(btn.dataset.url);
+              btn.textContent = '♥';
+              btn.disabled = true;
+            }
             alert(data.error);
           }
         });
