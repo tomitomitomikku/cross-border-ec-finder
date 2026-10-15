@@ -1,0 +1,342 @@
+/* ==========================================
+   Item Journal 共通スタイル
+   コンセプト: 税関申告書・郵便荷物タグ
+========================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Noto+Sans+JP:wght@400;500&display=swap');
+
+:root {
+  --navy: #1B2A4A;
+  --paper: #F7F3E9;
+  --stamp-red: #B23A2E;
+  --ink: #1B1B1B;
+  --line: #C9BFA8;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Noto Sans JP', sans-serif;
+  background-color: var(--paper);
+  color: var(--ink);
+  margin: 0;
+  padding: 0;
+  line-height: 1.7;
+}
+
+.page {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 32px 20px 60px;
+}
+
+.page.wide {
+  max-width: 900px;
+}
+
+h1, h2 {
+  font-family: 'Shippori Mincho', serif;
+  color: var(--navy);
+  letter-spacing: 0.03em;
+}
+
+h1 {
+  font-size: 2.2em;
+  font-weight: 700;
+  border-bottom: 3px double var(--navy);
+  padding-bottom: 10px;
+  margin-bottom: 20px;
+}
+
+h2 {
+  font-size: 1.2em;
+  font-weight: 700;
+  margin-top: 36px;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 6px;
+}
+
+nav {
+  display: flex;
+  justify-content: flex-end;
+  gap: 16px;
+  font-size: 0.9em;
+  margin-bottom: 24px;
+}
+
+nav a, nav button {
+  font-family: 'Noto Sans JP', sans-serif;
+  color: var(--navy);
+  background: none;
+  border: none;
+  text-decoration: none;
+  border-bottom: 1px solid var(--navy);
+  cursor: pointer;
+  padding: 0 0 2px;
+  font-size: 1em;
+}
+
+#searchBox, .searchBox {
+  display: flex;
+  gap: 0;
+  margin-bottom: 28px;
+  border: 2px solid var(--navy);
+  flex-wrap: wrap;
+}
+
+.searchBox input {
+  flex: 1;
+  padding: 12px;
+  border: none;
+  background: var(--paper);
+  font-family: inherit;
+  font-size: 1em;
+}
+
+.searchBox input:focus {
+  outline: 2px solid var(--stamp-red);
+  outline-offset: -2px;
+}
+
+.searchBtn {
+  background: var(--navy);
+  color: var(--paper);
+  border: none;
+  padding: 0 20px;
+  font-family: 'Shippori Mincho', serif;
+  font-size: 1em;
+  cursor: pointer;
+}
+
+.searchBtn:hover {
+  background: var(--stamp-red);
+}
+
+.card {
+  position: relative;
+  border: 1px dashed var(--navy);
+  background: #fff;
+  padding: 14px 16px;
+  margin-bottom: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.card.riskyCard { border-left: 4px solid var(--stamp-red); }
+
+.card a {
+  text-decoration: none;
+  color: var(--navy);
+  font-weight: 500;
+}
+
+.card a:hover {
+  color: var(--stamp-red);
+}
+
+.cardMain { display: flex; flex-direction: column; flex: 1; }
+.keyword { font-size: 0.8em; color: #706a5a; }
+.snippet { font-size: 0.85em; color: #706a5a; margin-top: 4px; }
+.trustReason { font-size: 0.8em; color: #706a5a; margin-top: 4px; }
+.emptyNote { color: #706a5a; font-size: 0.9em; }
+
+.heartBtn, .delete {
+  background: none;
+  border: none;
+  font-size: 1.4em;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.heartBtn { color: var(--stamp-red); }
+.heartBtn:disabled { opacity: 0.6; cursor: default; }
+.delete { color: #8a8478; }
+.delete:hover { color: var(--stamp-red); }
+
+.trustBadge {
+  font-size: 0.75em;
+  padding: 2px 8px;
+  border-radius: 3px;
+  margin-left: 8px;
+}
+.trust-trusted { background: #e3f0e3; color: #2d6a2d; }
+.trust-unknown { background: #f0ecdd; color: #8a6d1d; }
+.trust-risky { background: #fbe4e2; color: #B23A2E; font-weight: bold; }
+
+.regionBadge {
+  font-size: 0.75em;
+  padding: 2px 8px;
+  border-radius: 3px;
+  margin-left: 8px;
+  background: #e6ecf5;
+  color: var(--navy);
+}
+
+.regionNotice {
+  font-size: 0.8em;
+  color: #8a6d1d;
+  background: #f7f0dc;
+  padding: 8px 12px;
+  margin-bottom: 12px;
+}
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 12px 0;
+}
+
+th, td {
+  border: 1px solid var(--line);
+  padding: 8px 10px;
+  text-align: left;
+}
+
+th {
+  background: var(--navy);
+  color: var(--paper);
+  font-weight: 500;
+}
+
+.warning {
+  background: #fbeceA;
+  border-left: 4px solid var(--stamp-red);
+  padding: 12px 16px;
+  margin: 12px 0;
+}
+
+.authBox {
+  border: 2px solid var(--navy);
+  padding: 28px;
+  margin-top: 40px;
+  background: #fff;
+}
+
+.authBox input {
+  display: block;
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 14px;
+  border: 1px solid var(--line);
+  font-family: inherit;
+  font-size: 1em;
+}
+
+.authBox button {
+  width: 100%;
+  padding: 12px;
+  background: var(--navy);
+  color: var(--paper);
+  border: none;
+  font-family: 'Shippori Mincho', serif;
+  font-size: 1em;
+  cursor: pointer;
+}
+
+.authBox button:hover {
+  background: var(--stamp-red);
+}
+
+.message { margin-top: 12px; font-size: 0.9em; }
+.toggle { margin-top: 18px; text-align: center; font-size: 0.9em; }
+.toggle a { color: var(--navy); cursor: pointer; border-bottom: 1px solid var(--navy); }
+
+.adSlot {
+  border: 1px dashed var(--line);
+  background: #fdfcf7;
+  color: #a8a08a;
+  font-size: 0.75em;
+  text-align: center;
+  padding: 12px;
+  margin-bottom: 16px;
+}
+
+.adSlot::before {
+  content: "広告";
+  display: block;
+  font-size: 0.9em;
+  margin-bottom: 4px;
+  letter-spacing: 0.1em;
+}
+
+.pageLayout { display: flex; gap: 24px; align-items: flex-start; }
+.mainColumn { flex: 1; min-width: 0; }
+.sideColumn { width: 160px; flex-shrink: 0; }
+.sideColumn .adSlot { height: 300px; display: flex; flex-direction: column; justify-content: center; }
+
+@media (max-width: 700px) {
+  .sideColumn { display: none; }
+}
+
+.regionFilter { display: flex; align-items: center; gap: 10px; margin-top: 16px; }
+.regionFilterLabel { font-size: 0.85em; color: #706a5a; }
+.scopeToggle { display: inline-flex; border: 1px solid var(--navy); }
+.scopeBtn {
+  background: none;
+  border: none;
+  padding: 6px 18px;
+  cursor: pointer;
+  font-family: 'Noto Sans JP', sans-serif;
+  color: var(--navy);
+}
+.scopeBtn.active { background: var(--navy); color: var(--paper); }
+
+.marketBtn {
+  background: var(--stamp-red);
+  color: var(--paper);
+  border: none;
+  padding: 0 20px;
+  font-family: 'Shippori Mincho', serif;
+  cursor: pointer;
+  transition: background 0.15s, transform 0.1s;
+}
+.marketBtn:hover { background: #8f2e24; }
+.marketBtn:active { transform: scale(0.96); }
+.marketBtn.loading { background: #706a5a; cursor: wait; }
+
+.resetBtn {
+  background: none;
+  color: var(--navy);
+  border: 1px solid var(--navy);
+  padding: 0 16px;
+  font-family: 'Noto Sans JP', sans-serif;
+  cursor: pointer;
+}
+.resetBtn:hover { background: #eee6d6; }
+
+.priceCard {
+  border: 2px solid var(--navy);
+  background: #fff;
+  padding: 18px;
+  margin-bottom: 20px;
+}
+.priceRange {
+  font-family: 'Shippori Mincho', serif;
+  font-size: 1.4em;
+  color: var(--stamp-red);
+  margin: 8px 0;
+}
+.priceMeta { font-size: 0.85em; color: #706a5a; margin-bottom: 4px; }
+.priceError { color: var(--stamp-red); }
+
+.tabBar { display: flex; border-bottom: 2px solid var(--navy); margin-top: 20px; }
+.tabBtn {
+  background: none;
+  border: none;
+  padding: 10px 20px;
+  font-family: 'Shippori Mincho', serif;
+  font-size: 1em;
+  cursor: pointer;
+  color: #706a5a;
+  border-bottom: 3px solid transparent;
+  margin-bottom: -2px;
+}
+.tabBtn.active { color: var(--navy); border-bottom: 3px solid var(--stamp-red); font-weight: bold; }
+.tabPanel { padding-top: 16px; }
+.intentNote { font-size: 0.8em; color: #706a5a; margin: 8px 0 0; }
+
+.loading { color: #706a5a; margin: 12px 0; }
+.exchangeRate { font-size: 0.85em; color: #706a5a; margin-bottom: 16px; }

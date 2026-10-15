@@ -1,5 +1,6 @@
 require('dotenv').config();
 const express = require('express');
+const cors = require('cors'); // 追加：CORS対応
 const session = require('express-session');
 const bcrypt = require('bcrypt');
 const db = require('./db');
@@ -21,6 +22,12 @@ const anthropic = new Anthropic({
 
 const app = express();
 const PORT = 3000;
+
+// 追加：Vite（ポート5173）からのリクエストとCookie・セッション情報を許可
+app.use(cors({
+  origin: 'http://localhost:5173',
+  credentials: true
+}));
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -437,7 +444,6 @@ ${scopeInstruction}
     }
     const result = JSON.parse(jsonMatch[0]);
 
-    // 検索範囲に合わないサイトが混ざっていた場合の安全策(region未指定のものは残す)
     if (Array.isArray(result.results)) {
       if (scope === 'overseas') {
         result.results = result.results.filter(r => r.region !== 'domestic');
@@ -445,7 +451,6 @@ ${scopeInstruction}
         result.results = result.results.filter(r => r.region !== 'overseas');
       }
 
-      // 客観指標(ドメインの登録日など)による判定の補正
       result.results = await applyObjectiveIndicators(result.results);
     }
 
@@ -457,20 +462,18 @@ ${scopeInstruction}
   }
 });
 
-// ---- FR-12: 相場チェック(正式商品名限定、商品概要付き) ----
+// ---- FR-12: 相場チェック ----
 app.post('/api/market-price', async (req, res) => {
   const { text } = req.body;
   if (!text) {
     return res.status(400).json({ error: 'textが必要です' });
   }
 
-  // 開発用ダミーモード(APIを呼ばない)
   if (DEV_MOCK) {
     console.log(`[MOCK] market-price: ${text}`);
     return res.json(buildMockMarketPrice(text));
   }
 
-  // キャッシュ(同じ商品名の結果を使い回す。相場のブレも抑えられる)
   const cacheKey = makeCacheKey('market', text);
   const cached = cacheGet(cacheKey);
   if (cached) {
@@ -487,31 +490,18 @@ app.post('/api/market-price', async (req, res) => {
         role: 'user',
         content: `ユーザーが次のように入力しました: 「${text}」
 
-まず、これが特定の商品を指す「正式な商品名」として十分具体的かどうか判定してください。
-- 「クレヨンしんちゃん」のような作品名・カテゴリ名・ブランド名だけの入力は不十分です
-- 「クレヨンしんちゃん フィギュア 2020年 限定版」のように、種類・年代・型番などが分かる具体的な商品名なら十分です
-
-十分具体的な場合は、Web検索で以下を調べてください。
-1. 商品概要:発売時期、発売元・メーカー、簡単な商品説明(自分の言葉で2〜3文程度)
-2. 現在の実際の取引相場:定価・発売時の価格ではなく、フリマ・オークション・中古市場での直近の取引実績や出品価格を優先する。生産終了品・入手困難品・コレクター需要の高い商品はプレミア価格(定価より高騰した価格)がついている場合があるため、そうした実勢価格を反映する。逆に、大量生産品や需要の落ち着いた商品は、定価より安い相場になっている場合もある
-
-重要(価格帯の範囲について): 価格帯は「一般的な状態(並品〜美品程度)」での相場に絞ってください。鑑定機関によるトップグレード品(例: PSA10等)や、極端に状態の良い/悪い個体による外れ値は除外し、実用的な範囲(価格帯の上限が下限の10倍を大きく超えないことを目安)に収めてください。もし対象商品に極端な高額取引事例(鑑定品等)が存在する場合は、価格帯には含めず "note" にその旨を補足するだけに留めてください
-
-重要(通貨について): 海外の商品で現地通貨(ドル、ユーロ等)の相場情報しか見つからない場合は、必ず現在のおおよその為替レートで日本円に換算した金額を priceRangeLow / priceRangeHigh に入れてください。現地通貨の数値をそのまま円の数値として使うことは絶対にしないでください(例: 150ドルは約22,500円であり、150円ではありません)。円換算した場合はその旨を note に明記してください
-
-必ず以下のJSON形式のみで回答してください(他の文章は含めない、説明や前置きも書かない):
-
+十分具体的な商品名かどうか判定し、Web検索で商品概要と取引相場を調べてください。
+必ず以下のJSON形式のみで回答してください:
 十分具体的な場合:
 {
   "sufficient": true,
-  "releaseDate": "発売時期(分かる範囲で、例: 2020年3月)",
+  "releaseDate": "発売時期",
   "manufacturer": "発売元・メーカー",
   "description": "商品概要(2〜3文程度)",
   "priceRangeLow": 数値,
   "priceRangeHigh": 数値,
-  "note": "価格帯の根拠を一言(自分の言葉で。プレミア価格や鑑定品の高額事例、円換算した場合はその旨も触れる)"
+  "note": "価格帯の根拠"
 }
-
 不十分な場合:
 {"sufficient": false, "message": "キーワード不足、正式な商品名を入力してください"}`
       }]
@@ -523,7 +513,6 @@ app.post('/api/market-price', async (req, res) => {
     }
     const jsonMatch = textBlock.text.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
-      console.error('JSON抽出失敗。Claudeの生の返答:', textBlock.text);
       throw new Error('JSON形式の応答が見つかりませんでした');
     }
     const result = JSON.parse(jsonMatch[0]);
@@ -536,7 +525,7 @@ app.post('/api/market-price', async (req, res) => {
   }
 });
 
-// ---- FR-09: 会員登録 ----
+// ---- 認証・お気に入り等 ----
 app.post('/api/signup', async (req, res) => {
   const { email, password } = req.body;
   if (!email || !password) {
@@ -553,7 +542,6 @@ app.post('/api/signup', async (req, res) => {
   }
 });
 
-// ---- FR-09: ログイン ----
 app.post('/api/login', async (req, res) => {
   const { email, password } = req.body;
   const user = db.prepare('SELECT * FROM users WHERE email = ?').get(email);
@@ -571,13 +559,11 @@ app.post('/api/login', async (req, res) => {
   res.json({ message: 'ログインしました' });
 });
 
-// ---- FR-09: ログアウト ----
 app.post('/api/logout', (req, res) => {
   req.session.destroy();
   res.json({ message: 'ログアウトしました' });
 });
 
-// ---- FR-10: お気に入り登録(要ログイン) ----
 app.post('/api/favorites', (req, res) => {
   if (!req.session.userId) {
     return res.status(401).json({ error: 'ログインが必要です' });
@@ -597,7 +583,6 @@ app.post('/api/favorites', (req, res) => {
   }
 });
 
-// ---- FR-10: お気に入り一覧取得 ----
 app.get('/api/favorites', (req, res) => {
   if (!req.session.userId) {
     return res.status(401).json({ error: 'ログインが必要です' });
@@ -607,7 +592,6 @@ app.get('/api/favorites', (req, res) => {
   res.json(favorites);
 });
 
-// ---- FR-10: お気に入り削除 ----
 app.delete('/api/favorites/:id', (req, res) => {
   if (!req.session.userId) {
     return res.status(401).json({ error: 'ログインが必要です' });
@@ -618,7 +602,6 @@ app.delete('/api/favorites/:id', (req, res) => {
   res.json({ message: '削除しました' });
 });
 
-// ---- ログイン状態の確認 ----
 app.get('/api/me', (req, res) => {
   if (!req.session.userId) {
     return res.status(401).json({ error: '未ログインです' });

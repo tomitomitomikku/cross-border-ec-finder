@@ -1,11 +1,17 @@
 {
   "manifest_version": 3,
-  "name": "越境EC商品発見支援サービス",
+  "name": "ITEM journal",
   "version": "1.0",
   "description": "閲覧中の商品を国内外のサイトで横断比較できる拡張機能",
   "action": {
     "default_popup": "popup.html"
   },
-  "permissions": ["activeTab", "scripting"],
-  "host_permissions": ["http://localhost:3000/*"]
+  "permissions": [
+    "activeTab",
+    "scripting",
+    "storage"
+  ],
+  "host_permissions": [
+    "https://cross-border-ec-finder.onrender.com/*"
+  ]
 }
