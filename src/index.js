@@ -23,9 +23,15 @@ const anthropic = new Anthropic({
 const app = express();
 const PORT = 3000;
 
-// 追加：Vite（ポート5173）からのリクエストとCookie・セッション情報を許可
+// 【修正】Vite（ポート5173）およびChrome拡張機能からのリクエストとCookie・セッション情報を許可
 app.use(cors({
-  origin: 'http://localhost:5173',
+  origin: (origin, callback) => {
+    if (!origin || origin.startsWith('chrome-extension://') || origin === 'http://localhost:5173') {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true
 }));
 
@@ -216,7 +222,7 @@ app.get('/api/exchange-rate', async (req, res) => {
 // FR-08: 客観指標(ドメインの登録日など)による信頼性判定の補正
 // ==========================================================
 const rdapCache = new Map();
-let rdapBootstrap = null; // { 'com': 'https://rdap.verisign.com/com/v1', 'jp': 'https://rdap.jprs.jp', ... }
+let rdapBootstrap = null;
 
 function getHostname(url) {
   try {
@@ -226,7 +232,6 @@ function getHostname(url) {
   }
 }
 
-// ドメインの切り出し(簡易版): co.jp のような二段のドメインにも対応
 const SECOND_LEVEL_LABELS = new Set(['co', 'com', 'ne', 'or', 'ac', 'go', 'org', 'net', 'gov', 'edu', 'ad', 'ed', 'gr', 'lg']);
 function getRegistrableDomain(hostname) {
   const labels = hostname.split('.').filter(Boolean);
@@ -239,7 +244,6 @@ function getRegistrableDomain(hostname) {
   return labels.slice(-2).join('.');
 }
 
-// ドメインの種類(.com、.jp など)ごとの、登録情報の問い合わせ先をIANAの公式一覧から取得する
 async function loadRdapBootstrap() {
   if (rdapBootstrap) return rdapBootstrap;
 
@@ -259,14 +263,13 @@ async function loadRdapBootstrap() {
       }
     }
   } catch (err) {
-    // 取得できない場合は、次回の検索でもう一度試す
+    // 取得失敗時は次回に再試行
   }
 
   if (Object.keys(map).length > 0) rdapBootstrap = map;
   return map;
 }
 
-// 登録元(レジストリ)に直接問い合わせて、ドメインの登録日数を取得する。取得できなければ null
 async function fetchDomainAgeDays(domain) {
   if (rdapCache.has(domain)) return rdapCache.get(domain);
 
@@ -314,7 +317,6 @@ async function fetchDomainAgeDays(domain) {
   return ageDays;
 }
 
-// 詐欺サイトで使われる傾向のあるドメイン種別(単独では判定に使わない、弱い指標)
 const SUSPICIOUS_TLDS = new Set(['top', 'xyz', 'click', 'icu', 'cyou', 'buzz', 'cfd', 'sbs', 'vip', 'monster', 'rest']);
 
 async function analyzeDomain(url) {
@@ -353,7 +355,6 @@ async function analyzeDomain(url) {
   return { evidence, strong, weak, ageDays };
 }
 
-// 強い指標が1つ、または弱い指標が2つ以上ある場合は "risky" に引き上げる
 async function applyObjectiveIndicators(results) {
   return Promise.all(results.map(async (item) => {
     const info = await analyzeDomain(item && item.url);
@@ -367,7 +368,7 @@ async function applyObjectiveIndicators(results) {
   }));
 }
 
-// ---- FR-02 + FR-03 + FR-08 + FR-13: 意図判定・Web検索・信頼性判定(国内/国内外/国外) ----
+// ---- FR-02 + FR-03 + FR-08 + FR-13: 意図判定・Web検索・信頼性判定 ----
 app.post('/api/smart-search', async (req, res) => {
   const { text } = req.body;
   const scope = normalizeScope(req.body.scope);
@@ -375,13 +376,11 @@ app.post('/api/smart-search', async (req, res) => {
     return res.status(400).json({ error: 'textが必要です' });
   }
 
-  // 開発用ダミーモード(APIを呼ばない)
   if (DEV_MOCK) {
     console.log(`[MOCK] smart-search: ${text}`);
     return res.json(buildMockSmartSearch(text, scope));
   }
 
-  // キャッシュ(同じ検索語・同じ範囲の結果を使い回す)
   const cacheKey = makeCacheKey('smart', text, scope);
   const cached = cacheGet(cacheKey);
   if (cached) {

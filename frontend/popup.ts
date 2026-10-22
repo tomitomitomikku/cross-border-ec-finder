@@ -20,24 +20,40 @@ interface MarketPriceResponse {
   note?: string;
 }
 
-// 現在のタブのタイトルをキーワードに設定
+// 現在のタブのタイトルを取得し、検索キーワードとして綺麗に整形してセット
 chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-  const pageTitle = tabs[0]?.title || '';
+  let rawTitle = tabs[0]?.title || '';
+  
+  let cleanedTitle = rawTitle;
+  // Amazonの検索結果ページ等のタイトル（例: "Amazon.co.jp : スニーカー"）から純粋なキーワードを抽出
+  if (rawTitle.includes('Amazon.co.jp :')) {
+    cleanedTitle = rawTitle.replace(/.*Amazon\.co\.jp\s*:\s*/, '');
+  }
+  // その他の不要なサフィックスを削除
+  cleanedTitle = cleanedTitle.replace(/ - Amazon\.co\.jp$/, '').replace(/ [-\vert{}].*$/, '').trim();
+
   const pageTitleEl = document.getElementById('pageTitle');
   const keywordEl = document.getElementById('keyword') as HTMLInputElement | null;
 
-  if (pageTitleEl) pageTitleEl.textContent = `対象ページ: ${pageTitle}`;
-  if (keywordEl) keywordEl.value = pageTitle;
+  if (pageTitleEl) pageTitleEl.textContent = `対象ページ: ${rawTitle}`;
+  if (keywordEl) keywordEl.value = cleanedTitle || rawTitle;
 });
 
-// 検索ボタン
+// ---- 検索ボタン ----
 document.getElementById('searchBtn')?.addEventListener('click', async () => {
   const keywordEl = document.getElementById('keyword') as HTMLInputElement | null;
   const keyword = keywordEl?.value || '';
   if (!keyword) return;
 
   try {
-    const res = await fetch(`${API_BASE}/api/search?keyword=${encodeURIComponent(keyword)}`);
+    const res = await fetch(`${API_BASE}/api/search?keyword=${encodeURIComponent(keyword)}`, {
+      credentials: 'include'
+    });
+    
+    if (!res.ok) {
+      throw new Error('検索APIの応答がありません');
+    }
+
     const urls: Record<string, string> = await res.json();
 
     const resultsDiv = document.getElementById('results');
@@ -111,6 +127,7 @@ document.getElementById('marketBtn')?.addEventListener('click', async () => {
     const res = await fetch(`${API_BASE}/api/market-price`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
       body: JSON.stringify({ text: keyword })
     });
     const data: MarketPriceResponse = await res.json();
