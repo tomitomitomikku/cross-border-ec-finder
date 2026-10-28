@@ -17,7 +17,9 @@ export default function MyPage() {
   useEffect(() => {
     async function loadFavorites() {
       try {
-        const res = await fetch('/api/favorites');
+        const res = await fetch('http://localhost:3000/api/favorites', {
+          credentials: 'include' // セッションを送信して認証を通す
+        });
         if (!res.ok) {
           alert('ログインが必要です');
           navigate('/login');
@@ -36,7 +38,10 @@ export default function MyPage() {
 
   const handleDelete = async (id: number) => {
     try {
-      const res = await fetch(`/api/favorites/${id}`, { method: 'DELETE' });
+      const res = await fetch(`http://localhost:3000/api/favorites/${id}`, { 
+        method: 'DELETE',
+        credentials: 'include'
+      });
       if (res.ok) {
         alert('お気に入りから削除しました');
         setFavorites(prev => prev.filter(item => item.id !== id));
@@ -48,14 +53,34 @@ export default function MyPage() {
     }
   };
 
+  // ログアウト処理を追加
+  const handleLogout = async () => {
+    try {
+      await fetch('http://localhost:3000/api/logout', {
+        method: 'POST',
+        credentials: 'include'
+      });
+      navigate('/login');
+    } catch (err) {
+      console.error('ログアウトエラー:', err);
+      navigate('/login');
+    }
+  };
+
   return (
     <div style={{ maxWidth: '320px', margin: '30px auto', padding: '16px', fontFamily: 'sans-serif', background: '#F7F3E9', color: '#1B1B1B', borderRadius: '8px' }}>
-      <nav style={{ marginBottom: '15px' }}>
+      <nav style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '15px' }}>
         <button 
           onClick={() => navigate('/dashboard')} 
           style={{ background: 'none', border: 'none', color: '#1B2A4A', cursor: 'pointer', padding: 0, fontSize: '0.9em', textDecoration: 'underline' }}
         >
           &laquo; 検索画面に戻る
+        </button>
+        <button 
+          onClick={handleLogout}
+          style={{ background: 'none', border: 'none', color: '#B23A2E', cursor: 'pointer', padding: 0, fontSize: '0.9em', textDecoration: 'underline', fontWeight: 'bold' }}
+        >
+          ログアウト
         </button>
       </nav>
 
@@ -83,17 +108,14 @@ export default function MyPage() {
               fontSize: '0.85em' 
             }}
           >
-         <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden', paddingRight: '8px' }}>
-  　　{/* aタグのペア */}
-  　　<a href={fav.url} target="_blank" rel="noopener noreferrer" style={{ color: '#1B2A4A', textDecoration: 'none', fontWeight: 'bold', wordBreak: 'break-all' }}>
-    　{fav.site_name || fav.url}
-  </a>
-　
-  {/* spanタグのペア */}
-  <span style={{ fontSize: '0.8em', color: '#706a5a', marginTop: '2px' }}>
-    検索キーワード: {fav.keyword}
-  </span>
-</div>
+            <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden', paddingRight: '8px' }}>
+              <a href={fav.url} target="_blank" rel="noopener noreferrer" style={{ color: '#1B2A4A', textDecoration: 'none', fontWeight: 'bold', wordBreak: 'break-all' }}>
+                {fav.site_name || fav.url}
+              </a>
+              <span style={{ fontSize: '0.8em', color: '#706a5a', marginTop: '2px' }}>
+                検索キーワード: {fav.keyword}
+              </span>
+            </div>
             <button 
               onClick={() => handleDelete(fav.id)}
               style={{ background: 'none', border: 'none', color: '#B23A2E', fontSize: '1.1em', cursor: 'pointer', flex: 'none', padding: '4px' }}

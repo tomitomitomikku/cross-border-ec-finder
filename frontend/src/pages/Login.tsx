@@ -8,15 +8,17 @@ export default function Login() {
   const [password, setPassword] = useState<string>('');
   const [message, setMessage] = useState<{ text: string; color: string } | null>(null);
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
     setMessage(null);
     const endpoint = isLoginMode ? '/api/login' : '/api/signup';
 
     try {
-      const res = await fetch(endpoint, {
+      const res = await fetch(`http://localhost:3000${endpoint}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password })
+        body: JSON.stringify({ email, password }),
+        credentials: 'include' // セッションクッキーを確実に保持
       });
       const data = await res.json();
 
@@ -36,10 +38,10 @@ export default function Login() {
   };
 
   return (
-    <div style={{ maxWidth: '320px', margin: '40px auto', padding: '20px', fontFamily: 'sans-serif', background: '#F7F3E9', color: '#1B1B1B', borderRadius: '8px', border: '1px solid #1B2A4A' }}>
+    <div style={{ width: '320px', margin: '20px auto', padding: '20px', fontFamily: 'sans-serif', background: '#F7F3E9', color: '#1B1B1B', borderRadius: '8px', border: '1px solid #1B2A4A', boxSizing: 'border-box' }}>
       <h1 style={{ fontSize: '1.4em', color: '#1B2A4A', textAlign: 'center', marginBottom: '20px' }}>Item Journal</h1>
 
-      <div style={{ background: '#fff', padding: '16px', borderRadius: '6px', border: '1px solid #ddd' }}>
+      <form onSubmit={handleSubmit} style={{ background: '#fff', padding: '16px', borderRadius: '6px', border: '1px solid #ddd' }}>
         <h2 style={{ fontSize: '1.1em', color: '#1B2A4A', marginTop: 0, marginBottom: '15px' }}>
           {isLoginMode ? 'ログイン' : '新規登録'}
         </h2>
@@ -49,6 +51,7 @@ export default function Login() {
           placeholder="メールアドレス" 
           value={email}
           onChange={(e) => setEmail(e.target.value)}
+          required
           style={{ width: '100%', padding: '8px', marginBottom: '10px', boxSizing: 'border-box', border: '1px solid #ccc', borderRadius: '4px' }}
         />
         <input 
@@ -56,10 +59,11 @@ export default function Login() {
           placeholder="パスワード" 
           value={password}
           onChange={(e) => setPassword(e.target.value)}
+          required
           style={{ width: '100%', padding: '8px', marginBottom: '15px', boxSizing: 'border-box', border: '1px solid #ccc', borderRadius: '4px' }}
         />
         <button 
-          onClick={handleSubmit}
+          type="submit"
           style={{ width: '100%', padding: '10px', background: '#1B2A4A', color: '#F7F3E9', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}
         >
           {isLoginMode ? 'ログイン' : '登録する'}
@@ -76,6 +80,7 @@ export default function Login() {
             <span>
               アカウントをお持ちでない方は{' '}
               <button 
+                type="button"
                 onClick={() => { setIsLoginMode(false); setMessage(null); }}
                 style={{ background: 'none', border: 'none', color: '#1B2A4A', cursor: 'pointer', textDecoration: 'underline', padding: 0, font: 'inherit' }}
               >
@@ -86,6 +91,7 @@ export default function Login() {
             <span>
               すでにアカウントをお持ちの方は{' '}
               <button 
+                type="button"
                 onClick={() => { setIsLoginMode(true); setMessage(null); }}
                 style={{ background: 'none', border: 'none', color: '#1B2A4A', cursor: 'pointer', textDecoration: 'underline', padding: 0, font: 'inherit' }}
               >
@@ -94,7 +100,7 @@ export default function Login() {
             </span>
           )}
         </div>
-      </div>
+      </form>
     </div>
   );
 }

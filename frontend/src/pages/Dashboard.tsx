@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { api } from '../api';
 
 // --- 型定義 ---
 interface SmartItem {
@@ -74,7 +73,7 @@ export default function Dashboard() {
   useEffect(() => {
     async function fetchRate() {
       try {
-        const res = await fetch('/api/exchange-rate');
+        const res = await fetch('http://localhost:3000/api/exchange-rate');
         const data = await res.json();
         if (data && data.usdToJpy) {
           setExchangeRate(data.usdToJpy.toFixed(2));
@@ -85,6 +84,19 @@ export default function Dashboard() {
     }
     fetchRate();
   }, []);
+
+  const handleLogout = async () => {
+    try {
+      await fetch('http://localhost:3000/api/logout', {
+        method: 'POST',
+        credentials: 'include'
+      });
+      navigate('/login');
+    } catch (err) {
+      console.error('ログアウトエラー:', err);
+      navigate('/login');
+    }
+  };
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -102,10 +114,11 @@ export default function Dashboard() {
     let auctions: Record<string, string> = {};
 
     try {
-      const smartRes = await fetch('/api/smart-search', {
+      const smartRes = await fetch('http://localhost:3000/api/smart-search', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: keyword, scope: 'global' })
+        body: JSON.stringify({ text: keyword, scope: 'global' }),
+        credentials: 'include'
       });
       const smartData = await smartRes.json();
       if (smartRes.ok && Array.isArray(smartData.results)) {
@@ -119,7 +132,9 @@ export default function Dashboard() {
     }
 
     try {
-      const res = await fetch(`/api/search?keyword=${encodeURIComponent(keyword)}&scope=global`);
+      const res = await fetch(`http://localhost:3000/api/search?keyword=${encodeURIComponent(keyword)}&scope=global`, {
+        credentials: 'include'
+      });
       auctions = await res.json();
     } catch (err) {
       auctions = {};
@@ -139,10 +154,11 @@ export default function Dashboard() {
     setMarketResult(null);
 
     try {
-      const res = await fetch('/api/market-price', {
+      const res = await fetch('http://localhost:3000/api/market-price', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: keyword })
+        body: JSON.stringify({ text: keyword }),
+        credentials: 'include'
       });
       const data = await res.json();
       setMarketResult(data);
@@ -154,10 +170,11 @@ export default function Dashboard() {
 
   const handleFavorite = async (url: string, siteName: string) => {
     try {
-      const res = await fetch('/api/favorites', {
+      const res = await fetch('http://localhost:3000/api/favorites', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ keyword, url, siteName })
+        body: JSON.stringify({ keyword, url, siteName }),
+        credentials: 'include'
       });
       const data = await res.json();
       if (res.ok || res.status === 409) {
@@ -187,7 +204,7 @@ export default function Dashboard() {
       <nav style={{ display: 'flex', justifyContent: 'flex-end', gap: '15px', marginBottom: '20px', borderBottom: '1px solid #ccc', paddingBottom: '10px' }}>
         <button onClick={() => navigate('/mypage')} style={{ background: 'none', border: 'none', color: '#0066cc', cursor: 'pointer' }}>マイページ</button>
         <button onClick={() => navigate('/help')} style={{ background: 'none', border: 'none', color: '#0066cc', cursor: 'pointer' }}>ヘルプ</button>
-        <button onClick={() => { api.logout(); navigate('/'); }} style={{ background: '#f44336', color: 'white', border: 'none', padding: '5px 10px', borderRadius: '4px', cursor: 'pointer' }}>ログアウト</button>
+        <button onClick={handleLogout} style={{ background: '#f44336', color: 'white', border: 'none', padding: '5px 10px', borderRadius: '4px', cursor: 'pointer' }}>ログアウト</button>
       </nav>
 
       <h1>商品を探す</h1>
