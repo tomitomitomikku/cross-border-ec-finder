@@ -23,10 +23,11 @@ export default defineConfig(({ mode }) => {
       emptyOutDir: true,
       rollupOptions: {
         input: {
-          popup: resolve(import.meta.dirname, 'popup.html'),
+          // Vercelの場合はindex.htmlを、それ以外はpopup.htmlをメインにするなどの切り分け
+          main: resolve(import.meta.dirname, isVercel ? 'index.html' : 'popup.html'),
         },
         output: {
-          entryFileNames: 'popup.js',
+          entryFileNames: 'assets/[name].js',
           chunkFileNames: 'assets/[name].js',
           assetFileNames: 'assets/[name].[ext]'
         }
