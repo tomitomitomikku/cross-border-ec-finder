@@ -3,15 +3,14 @@ import react from '@vitejs/plugin-react'
 import { resolve } from 'path'
 
 export default defineConfig(({ mode }) => {
-  // Vercel環境の場合は出力先を 'dist' にする
   const isVercel = process.env.VERCEL;
 
   return {
     plugins: [react()],
     resolve: {
       alias: {
-        react: resolve(__dirname, 'node_modules/react'),
-        'react-dom': resolve(__dirname, 'node_modules/react-dom'),
+        react: resolve(import.meta.dirname, 'node_modules/react'),
+        'react-dom': resolve(import.meta.dirname, 'node_modules/react-dom'),
       },
     },
     server: {
